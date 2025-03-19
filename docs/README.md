@@ -4,6 +4,8 @@ Thank you for your interest!
 The **paper and code will be released during the week of March 25–31, 2025**. Stay tuned!  
 
 🔗 **Check back here for updates.**  
+📌 **Watch the repository to get notified:**  
+👉 [GitHub Repository](https://github.com/tue-mps/EoMT)  
 
 ---
 
@@ -20,7 +22,7 @@ This repository will include:
 
 ## 🔔 Stay Updated
 Watch this repository for notifications:  
-👉 Click **"Watch"** (🔔) at the top of this page.  
+👉 [GitHub Repository](https://github.com/tue-mps/EoMT)  
 
 ---
 
