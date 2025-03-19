@@ -26,4 +26,4 @@ Watch this repository for notifications:
 
 ---
 
-💡 _For any inquiries, feel free to reach out._  
+💡 _For inquiries, please open a [GitHub Issue](https://github.com/tue-mps/EoMT/issues) or reach out at t.kerssies[at]tue[dot]nl._
