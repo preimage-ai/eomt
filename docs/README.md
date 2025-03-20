@@ -1,4 +1,4 @@
-# 🚀 Your ViT is Secretly an Image Segmentation Model  
+# Your ViT is Secretly an Image Segmentation Model  
 
 **Tommie Kerssies¹, Niccolò Cavagnero²*, Alexander Hermans³, Narges Norouzi¹,  
 Giuseppe Averta², Bastian Leibe³, Gijs Dubbelman¹, Daan de Geus¹³**  
@@ -11,20 +11,15 @@ Giuseppe Averta², Bastian Leibe³, Gijs Dubbelman¹, Daan de Geus¹³**
 
 ---
 
-## 📌 Paper & Code Release
+## **CVPR 2025 Main Track Paper**  
 
-The **paper and code will be released during the week of March 25–31, 2025**. Stay tuned!  
+This work has been accepted to the **CVPR 2025 Main Track** and will be presented at **CVPR 2025**, taking place **June 11–15, 2025, in Nashville, Tennessee**.  
 
-🔗 **Check back here for updates.**  
-📌 **Watch the repository to get notified:**  
-👉 [GitHub Repository](https://github.com/tue-mps/EoMT)  
+The **paper and code will be released soon**.  
 
----
-
-## 📅 Release Timeline
-✅ **March 19, 2025** – Announcement  
-🚀 **Week of March 25–31, 2025** – Paper & code release  
+🔗 **Watch this repository to get notified:**  
+👉 [Watch on GitHub](https://github.com/tue-mps/eomt/subscription)  
 
 ---
 
-💡 _For inquiries, please open a [GitHub Issue](https://github.com/tue-mps/EoMT/issues) or reach out at t.kerssies[at]tue[dot]nl._
+💡 _For inquiries, please open a [GitHub Issue](https://github.com/tue-mps/eomt/issues) or reach out at t.kerssies[at]tue[dot]nl._
