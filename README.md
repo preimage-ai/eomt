@@ -18,6 +18,52 @@
 
 ---
 
+## Installation
+
+```bash
+conda create -n EoMT python==3.12
+conda activate EoMT
+pip install -r requirements.txt
+```
+
+---
+
+## Data preparation
+
+Download the following datasets to train and test EoMT models. The code will access the datasets at the location specified by the **root** parameter.
+
+**COCO**
+```bash
+wget http://images.cocodataset.org/zips/train2017.zip
+wget http://images.cocodataset.org/zips/val2017.zip
+wget http://images.cocodataset.org/annotations/annotations_trainval2017.zip
+wget http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip
+```
+
+**ADE20K**
+```bash
+wget http://sceneparsing.csail.mit.edu/data/ADEChallengeData2016.zip
+wget http://sceneparsing.csail.mit.edu/data/ChallengeData2017/annotations_instance.tar
+tar -xf annotations_instance.tar
+zip -r -0 annotations_instance.zip annotations_instance/
+rm -rf annotations_instance.tar
+rm -rf annotations_instance
+```
+
+**Cityscapes**
+```bash
+wget https://www.cityscapes-dataset.com/file-handling/?packageID=1
+wget https://www.cityscapes-dataset.com/file-handling/?packageID=3
+```
+
+---
+
+## Model Zoo
+
+**Coming soon**
+
+---
+
 ## Citation
 If you find this project helpful for your research, please consider citing the following BibTeX entry.
 
