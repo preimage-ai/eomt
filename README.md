@@ -1,6 +1,6 @@
 # Your ViT is Secretly an Image Segmentation Model (CVPR 2025)
 
-*Tommie Kerssies¹, Niccolò Cavagnero²\*, Alexander Hermans³, Narges Norouzi¹, Giuseppe Averta², Bastian Leibe³, Gijs Dubbelman¹, Daan de Geus¹³*
+*[Tommie Kerssies](https://tommiekerssies.com)¹, [Niccolò Cavagnero](https://scholar.google.com/citations?user=Pr4XHRAAAAAJ)²\*, [Alexander Hermans](https://scholar.google.de/citations?user=V0iMeYsAAAAJ)³, [Narges Norouzi](https://scholar.google.com/citations?user=q7sm490AAAAJ)¹, [Giuseppe Averta](https://scholar.google.com/citations?user=i4rm0tYAAAAJ&hl)², [Bastian Leibe](https://scholar.google.com/citations?user=ZcULDB0AAAAJ)³, [Gijs Dubbelman](https://scholar.google.nl/citations?user=wy57br8AAAAJ)¹, [Daan de Geus](https://ddegeus.github.io)¹³*
 
 <sup>1</sup> Eindhoven University of Technology  
 <sup>2</sup> Polytechnic of Turin  
@@ -30,7 +30,7 @@ pip install -r requirements.txt
 
 ## Data preparation
 
-Download the following datasets to train and test EoMT models. The code will access the datasets at the location specified by the **root** parameter.
+Download the following datasets for training and testing EoMT models. Downloading is optional and depends on which datasets you plan to use. There is no need to unzip the folders. The code will access the datasets directly from the location specified by the **--root** parameter.
 
 **COCO**
 ```bash
