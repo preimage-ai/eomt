@@ -1,7 +1,6 @@
 # Your ViT is Secretly an Image Segmentation Model (CVPR 2025)
 
-**Tommie Kerssies¹, Niccolò Cavagnero²*, Alexander Hermans³, Narges Norouzi¹**  
-**Giuseppe Averta², Bastian Leibe³, Gijs Dubbelman¹, Daan de Geus¹³**
+**Tommie Kerssies¹, Niccolò Cavagnero²*, Alexander Hermans³, Narges Norouzi¹, Giuseppe Averta², Bastian Leibe³, Gijs Dubbelman¹, Daan de Geus¹³**
 
 <sup>1</sup> Eindhoven University of Technology  
 <sup>2</sup> Polytechnic of Turin  
@@ -16,7 +15,3 @@
 🛎️ **Stay updated**: [Watch the repository](https://github.com/tue-mps/eomt/subscription)  
 🐞 **Questions or issues?** [Open a GitHub issue](https://github.com/tue-mps/eomt/issues)  
 📬 **Contact**: t.kerssies[at]tue[dot]nl
-
----
-
-<img src="./docs/static/images/arch.svg" alt="Method figure" style="width:50%; margin-top:1em;" />
