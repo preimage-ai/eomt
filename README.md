@@ -15,3 +15,17 @@
 🛎️ **Stay updated**: [Watch the repository](https://github.com/tue-mps/eomt/subscription)  
 🐞 **Questions or issues?** [Open a GitHub issue](https://github.com/tue-mps/eomt/issues)  
 📬 **Contact**: t.kerssies[at]tue[dot]nl
+
+---
+
+## Citation
+If you find this project helpful for your research, please consider citing the following BibTeX entry.
+
+```BibTeX
+@inproceedings{kerssies2025eomt,
+  author    = {Kerssies, Tommie and Cavagnero, Niccolò and Hermans, Alexander and Norouzi, Narges and Averta, Giuseppe and Leibe, Bastian and Dubbelman, Gijs and de Geus, Daan},
+  title     = {Your ViT is Secretly an Image Segmentation Model},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2025},
+}
+```
