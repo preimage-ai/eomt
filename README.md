@@ -10,7 +10,7 @@
 
 ---
 
-📄 **Paper**: [Arxiv](https://arxiv.org/abs/2503.19108)  
+📄 **Paper**: [arXiv](https://arxiv.org/abs/2503.19108)  
 💻 **Code**: Coming soon  
 👁️ **Project page**: [https://tue-mps.github.io/eomt](https://tue-mps.github.io/eomt)  
 🛎️ **Stay updated**: [Watch the repository](https://github.com/tue-mps/eomt/subscription)  
