@@ -1,6 +1,6 @@
 # Your ViT is Secretly an Image Segmentation Model (CVPR 2025)
 
-*[Tommie Kerssies](https://tommiekerssies.com)¹, [Niccolò Cavagnero](https://scholar.google.com/citations?user=Pr4XHRAAAAAJ)²\*, [Alexander Hermans](https://scholar.google.de/citations?user=V0iMeYsAAAAJ)³, [Narges Norouzi](https://scholar.google.com/citations?user=q7sm490AAAAJ)¹, [Giuseppe Averta](https://scholar.google.com/citations?user=i4rm0tYAAAAJ&hl)², [Bastian Leibe](https://scholar.google.com/citations?user=ZcULDB0AAAAJ)³, [Gijs Dubbelman](https://scholar.google.nl/citations?user=wy57br8AAAAJ)¹, [Daan de Geus](https://ddegeus.github.io)¹³*
+*[Tommie Kerssies](https://tommiekerssies.com)¹, [Niccolò Cavagnero](https://scholar.google.com/citations?user=Pr4XHRAAAAAJ)²<sup>,</sup>\*, [Alexander Hermans](https://scholar.google.de/citations?user=V0iMeYsAAAAJ)³, [Narges Norouzi](https://scholar.google.com/citations?user=q7sm490AAAAJ)¹, [Giuseppe Averta](https://www.giuseppeaverta.me/)², [Bastian Leibe](https://scholar.google.com/citations?user=ZcULDB0AAAAJ)³, [Gijs Dubbelman](https://scholar.google.nl/citations?user=wy57br8AAAAJ)¹, [Daan de Geus](https://ddegeus.github.io)¹<sup>,</sup>³*
 
 <sup>1</sup> Eindhoven University of Technology  
 <sup>2</sup> Polytechnic of Turin  
@@ -9,12 +9,17 @@
 
 ---
 
-📄 **Paper**: Coming soon  
+📄 **Paper**: [Arxiv](https://arxiv.org/abs/2503.19108)  
 💻 **Code**: Coming soon  
 👁️ **Project page**: [https://tue-mps.github.io/eomt](https://tue-mps.github.io/eomt)  
 🛎️ **Stay updated**: [Watch the repository](https://github.com/tue-mps/eomt/subscription)  
 🐞 **Questions or issues?** [Open a GitHub issue](https://github.com/tue-mps/eomt/issues)  
 📬 **Contact**: t.kerssies[at]tue[dot]nl
+
+---
+Welcome to the official code repository of "**Your ViT is Secretely an Image Segmentation Model**".
+
+In this paper, we show that task-specific components for image segmentation with Vision Transformers (ViTs) become increasingly redundant as model size and pre-training are scaled up. By removing all such components, we introduce the **Encoder-only Mask Transformer (EoMT)**, a segmentation model that purely uses a plain ViT, revealing that _your ViT is secretly an image segmentation model_.
 
 ---
 
@@ -55,6 +60,12 @@ rm -rf annotations_instance
 wget https://www.cityscapes-dataset.com/file-handling/?packageID=1
 wget https://www.cityscapes-dataset.com/file-handling/?packageID=3
 ```
+
+---
+
+## Usage
+
+**Coming soon**
 
 ---
 
