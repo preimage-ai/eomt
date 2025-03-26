@@ -7,6 +7,7 @@
 <sup>3</sup> RWTH Aachen University  
 <sup>\*</sup> _Work done while visiting RWTH Aachen University._
 
+
 ---
 
 📄 **Paper**: [Arxiv](https://arxiv.org/abs/2503.19108)  
@@ -56,10 +57,8 @@ rm -rf annotations_instance
 ```
 
 **Cityscapes**
-```bash
-wget https://www.cityscapes-dataset.com/file-handling/?packageID=1
-wget https://www.cityscapes-dataset.com/file-handling/?packageID=3
-```
+
+Please refer to this [GitHub repository](https://github.com/cemsaz/city-scapes-script) and download the .zip files for packageID=1 and packageID=3.
 
 ---
 
