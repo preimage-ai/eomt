@@ -124,7 +124,7 @@ Please refer to this [GitHub repository](https://github.com/cemsaz/city-scapes-s
 <!-- START TABLE -->
 <!-- TABLE HEADER -->
 <th valign="bottom">Config</th>
-<th valign="bottom">Resolution</th>
+<th valign="bottom">Input size</th>
 <th valign="bottom">FPS</th>
 <th valign="bottom">PQ</th>
 <th valign="bottom">Download</th>
@@ -167,7 +167,7 @@ Please refer to this [GitHub repository](https://github.com/cemsaz/city-scapes-s
 <!-- START TABLE -->
 <!-- TABLE HEADER -->
 <th valign="bottom">Config</th>
-<th valign="bottom">Resolution</th>
+<th valign="bottom">Input size</th>
 <th valign="bottom">FPS</th>
 <th valign="bottom">mIoU</th>
 <th valign="bottom">Download</th>
@@ -187,7 +187,7 @@ Please refer to this [GitHub repository](https://github.com/cemsaz/city-scapes-s
 <!-- START TABLE -->
 <!-- TABLE HEADER -->
 <th valign="bottom">Config</th>
-<th valign="bottom">Resolution</th>
+<th valign="bottom">Input size</th>
 <th valign="bottom">FPS</th>
 <th valign="bottom">mIoU</th>
 <th valign="bottom">Download</th>
@@ -209,7 +209,7 @@ Please refer to this [GitHub repository](https://github.com/cemsaz/city-scapes-s
 <!-- START TABLE -->
 <!-- TABLE HEADER -->
 <th valign="bottom">Config</th>
-<th valign="bottom">Resolution</th>
+<th valign="bottom">Input size</th>
 <th valign="bottom">FPS</th>
 <th valign="bottom">AP</th>
 <th valign="bottom">Download</th>
