@@ -18,7 +18,7 @@
 📬 **Contact**: t.kerssies[at]tue[dot]nl
 
 ---
-Welcome to the official code repository of "**Your ViT is Secretely an Image Segmentation Model**".
+Welcome to the official code repository of "**Your ViT is Secretly an Image Segmentation Model**".
 
 In this paper, we show that task-specific components for image segmentation with Vision Transformers (ViTs) become increasingly redundant as model size and pre-training are scaled up. By removing all such components, we introduce the **Encoder-only Mask Transformer (EoMT)**, a segmentation model that purely uses a plain ViT, revealing that _your ViT is secretly an image segmentation model_.
 
