@@ -83,7 +83,7 @@ Please refer to this [GitHub repository](https://github.com/cemsaz/city-scapes-s
 <!-- START TABLE -->
 <!-- TABLE HEADER -->
 <th valign="bottom">Config</th>
-<th valign="bottom">Resolution</th>
+<th valign="bottom">Input size</th>
 <th valign="bottom">FPS</th>
 <th valign="bottom">PQ</th>
 <th valign="bottom">Download</th>
