@@ -205,8 +205,6 @@ Please refer to this [GitHub repository](https://github.com/cemsaz/city-scapes-s
 
 #### COCO
 
-#### Cityscapes
-
 <table><tbody>
 <!-- START TABLE -->
 <!-- TABLE HEADER -->
