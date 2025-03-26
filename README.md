@@ -41,7 +41,7 @@ pip install -r requirements.txt
 
 ## Data preparation
 
-Download the following datasets for training and testing EoMT models. Downloading is optional and depends on which datasets you plan to use. There is no need to unzip the folders. The code will access the datasets directly from the location specified by the **--root** parameter.
+Download the following datasets for training and testing EoMT models. Downloading is optional and depends on which datasets you plan to use. There is no need to unzip the folders. The code will access the datasets directly from the location specified by the **--data.path** parameter.
 
 **COCO**
 ```bash
