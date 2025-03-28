@@ -139,19 +139,19 @@
 
 <section class="hero is-light">
   <div class="hero-body container is-max-desktop">
-    <!-- Abstract. -->
+    <!-- Overview. -->
     <div class="columns is-centered has-text-centered">
       <div class="column is-four-fifths">
-        <h2 class="title is-3">Abstract</h2>
+        <h2 class="title is-3">Overview</h2>
         <div class="content has-text-justified">
           <p>
-            Vision Transformers (ViTs) have shown remarkable performance and scalability across various computer vision tasks. To apply single-scale ViTs to image segmentation, existing methods adopt a convolutional adapter to generate multi-scale features, a pixel decoder to fuse these features, and a Transformer decoder to make predictions.
+            We present the <b>Encoder-only Mask Transformer</b> (EoMT), a minimalist image segmentation model purely using a plain Vision Transformer. No adapters, no decoders, just the ViT.
           </p>
           <p>
-            In this paper, we show that the inductive biases introduced by these task-specific components can instead be learned by the ViT itself, given sufficiently large models and extensive pre-training. Based on these findings, we introduce the <em>Encoder-only Mask Transformer</em> (EoMT), which repurposes the plain ViT architecture for efficient image segmentation.
+            With large, extensively pre-trained ViTs, EoMT achieves accuracy similar to state-of-the-art methods that rely on complex, task-specific components. At the same time, EoMT is significantly faster thanks to its simplicity, e.g., up to 4× faster with ViT-L.  
           </p>
           <p>
-            With large-scale models and pre-training, EoMT achieves segmentation accuracy similar to state-of-the-art methods while being significantly faster due to its architectural simplicity.
+            EoMT demonstrates that architectural complexity is not required, raw Transformer power is all you need. Turns out, <em>your ViT is secretly an image segmentation model</em>. 
           </p>
         </div>
       </div>

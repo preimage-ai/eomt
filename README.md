@@ -9,39 +9,62 @@
 
 
 ---
-Welcome to the official code repository of "**Your ViT is Secretly an Image Segmentation Model**".
+
+Welcome to the official repository for "**Your ViT is Secretly an Image Segmentation Model**".
 
 📄 **Paper**: [arXiv](https://arxiv.org/abs/2503.19108)  
-💻 **Code**: Coming soon  
 👁️ **Project page**: [https://tue-mps.github.io/eomt](https://tue-mps.github.io/eomt)  
 🛎️ **Stay updated**: [Watch the repository](https://github.com/tue-mps/eomt/subscription)  
 🐞 **Questions or issues?** [Open a GitHub issue](https://github.com/tue-mps/eomt/issues)  
 📬 **Contact**: t.kerssies[at]tue[dot]nl
 
 ---
-## Abstract
 
-Vision Transformers (ViTs) have shown remarkable performance and scalability across various computer vision tasks. To apply single-scale ViTs to image segmentation, existing methods adopt a convolutional adapter to generate multi-scale features, a pixel decoder to fuse these features, and a Transformer decoder to make predictions.
+## Overview
 
-In this paper, we show that the inductive biases introduced by these task-specific components can instead be learned by the ViT itself, given sufficiently large models and extensive pre-training. Based on these findings, we introduce the Encoder-only Mask Transformer (EoMT), which repurposes the plain ViT architecture for efficient image segmentation.
+We present the **Encoder-only Mask Transformer** (EoMT), a minimalist image segmentation model purely using a plain Vision Transformer. No adapters, no decoders, just the ViT.
 
-With large-scale models and pre-training, EoMT achieves segmentation accuracy similar to state-of-the-art methods while being significantly faster due to its architectural simplicity.
+Leveraging large, extensively pre-trained ViTs, EoMT achieves accuracy similar to state-of-the-art methods that rely on complex, task-specific components. At the same time, EoMT is significantly faster thanks to its simplicity, e.g., up to 4× faster with ViT-L.  
+
+EoMT demonstrates that architectural complexity is not required, raw Transformer power is all you need. Turns out, *your ViT is secretly an image segmentation model*. 
 
 ---
 
 ## Installation
 
+If you don't have Conda installed, install Miniconda and restart your shell:
+
+```bash
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+```
+
+Then create the environment, activate it, and install the dependencies:
+
 ```bash
 conda create -n EoMT python==3.12
 conda activate EoMT
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
+```
+
+---
+
+## Weights & Biases
+
+[Weights & Biases](https://wandb.ai/) (wandb) is used for experiment logging and visualization. To enable wandb, log in to your account:
+
+```bash
+wandb login
 ```
 
 ---
 
 ## Data preparation
 
-Download the following datasets for training and testing EoMT models. Downloading is optional and depends on which datasets you plan to use. There is no need to unzip the folders. The code will access the datasets directly from the location specified by the **--data.path** parameter.
+Download the datasets below depending on which datasets you plan to use.  
+You do **not** need to unzip any of the downloaded files.  
+Simply place them in a directory of your choice and provide that path via the `--data.path` argument.  
+The code will read the `.zip` files directly.
 
 **COCO**
 ```bash
@@ -53,7 +76,7 @@ wget http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017
 
 **ADE20K**
 ```bash
-wget http://sceneparsing.csail.mit.edu/data/ADEChallengeData2016.zip
+wget http://data.csail.mit.edu/places/ADEchallenge/ADEChallengeData2016.zip
 wget http://sceneparsing.csail.mit.edu/data/ChallengeData2017/annotations_instance.tar
 tar -xf annotations_instance.tar
 zip -r -0 annotations_instance.zip annotations_instance/
@@ -62,18 +85,73 @@ rm -rf annotations_instance
 ```
 
 **Cityscapes**
+```bash
+wget --keep-session-cookies --save-cookies=cookies.txt --post-data 'username=<your_username>&password=<your_password>&submit=Login' https://www.cityscapes-dataset.com/login/
+wget --load-cookies cookies.txt --content-disposition https://www.cityscapes-dataset.com/file-handling/?packageID=1
+wget --load-cookies cookies.txt --content-disposition https://www.cityscapes-dataset.com/file-handling/?packageID=3
+```
 
-Please refer to this [GitHub repository](https://github.com/cemsaz/city-scapes-script) and download the .zip files for packageID=1 and packageID=3.
+🔧 Replace `<your_username>` and `<your_password>` with your actual [Cityscapes](https://www.cityscapes-dataset.com/) login credentials.  
 
 ---
 
 ## Usage
 
-**Coming soon**
+### Training
+
+To train EoMT from scratch, run:
+
+```bash
+python3 main.py fit \
+  -c configs/coco/panoptic/eomt_large_640.yaml \
+  --trainer.devices 4 \
+  --data.batch_size 4 \
+  --data.path /path/to/dataset
+```
+
+This trains the `EoMT-L` model on COCO panoptic segmentation with a 640×640 input size using 4 GPUs. Each GPU processes a batch of 4 images, for a total batch size of 16.  
+
+✅ The total batch size must be `devices × batch_size = 16`  
+🔧 Replace `/path/to/dataset` with the directory containing the dataset zip files.
+
+> This configuration takes ~6 hours on 4×NVIDIA H100 GPUs, each using ~26GB VRAM.
+
+To fine-tune a pre-trained EoMT model, add:
+
+```bash
+  --model.load_ckpt_class_head False
+  --model.ckpt_path /path/to/pytorch_model.bin \
+```
+
+🔧 Replace `/path/to/pytorch_model.bin` with the checkpoint to fine-tune.  
+
+> `--model.load_ckpt_class_head False` skips loading the class prediction head when fine-tuning on a dataset with different categories.  
+
+### Evaluating
+
+To evaluate a pre-trained EoMT model, run:
+
+```bash
+python3 main.py validate \
+  -c configs/coco/panoptic/eomt_large_640.yaml \
+  --trainer.devices 4 \
+  --data.batch_size 4 \
+  --data.path /path/to/dataset \
+  --model.ckpt_path /path/to/pytorch_model.bin
+```
+
+This evaluates the same `EoMT-L` model using 4 GPUs with a batch size of 4 per GPU.
+
+🔧 Replace `/path/to/dataset` with the directory containing the dataset zip files.  
+🔧 Replace `/path/to/pytorch_model.bin` with the checkpoint to evaluate.
+
+A [notebook](inference.ipynb) is also available for quick inference and visualization with pre-trained models.
 
 ---
 
 ## Model Zoo
+
+> All FPS values were measured on an NVIDIA H100 GPU.
 
 ### Panoptic Segmentation
 
@@ -89,36 +167,38 @@ Please refer to this [GitHub repository](https://github.com/cemsaz/city-scapes-s
 <th valign="bottom">Download</th>
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 640x640 -->
-<tr><td align="left"><a href="#">EoMT-L</a></td>
+<tr><td align="left"><a href="configs/coco_panoptic_eomt_large_640.yaml">EoMT-L</a></td>
 <td align="center">640x640</td>
 <td align="center">128</td>
 <td align="center">56.0</td>
-<td align="center"><a href="#">Coming soon</a></td>
+<td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_large_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-L 1280x1280 -->
-<tr><td align="left"><a href="#">EoMT-L</a></td>
+<tr><td align="left"><a href="configs/coco_panoptic_eomt_large_1280.yaml">EoMT-L</a></td>
 <td align="center">1280x1280</td>
 <td align="center">30</td>
 <td align="center">58.3</td>
-<td align="center"><a href="#">Coming soon</a></td>
+<td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_large_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-g 640x640 -->
-<tr><td align="left"><a href="#">EoMT-g</a></td>
+<tr><td align="left"><a href="configs/coco_panoptic_eomt_giant_640.yaml">EoMT-g</a></td>
 <td align="center">640x640</td>
 <td align="center">55</td>
 <td align="center">57.0</td>
-<td align="center"><a href="#">Coming soon</a></td>
+<td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_giant_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-g 1280x1280 -->
-<tr><td align="left"><a href="#">EoMT-g</a></td>
+<tr><td align="left"><a href="configs/coco_panoptic_eomt_giant_1280.yaml">EoMT-g</a></td>
 <td align="center">1280x1280</td>
 <td align="center">12</td>
 <td align="center">59.2</td>
-<td align="center"><a href="#">Coming soon</a></td>
+<td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_giant_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 </tbody></table>
 
 #### ADE20K
+
+> ADE20K panoptic results use COCO pre-training. See above for how to load a checkpoint.
 
 <table><tbody>
 <!-- START TABLE -->
@@ -130,32 +210,32 @@ Please refer to this [GitHub repository](https://github.com/cemsaz/city-scapes-s
 <th valign="bottom">Download</th>
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 640x640 -->
-<tr><td align="left"><a href="#">EoMT-L</a></td>
+<tr><td align="left"><a href="configs/ade20k_panoptic_eomt_large_640.yaml">EoMT-L</a></td>
 <td align="center">640x640</td>
 <td align="center">128</td>
 <td align="center">50.6</td>
-<td align="center"><a href="#">Coming soon</a></td>
+<td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_large_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-L 1280x1280 -->
-<tr><td align="left"><a href="#">EoMT-L</a></td>
+<tr><td align="left"><a href="configs/ade20k_panoptic_eomt_large_1280.yaml">EoMT-L</a></td>
 <td align="center">1280x1280</td>
 <td align="center">30</td>
 <td align="center">51.7</td>
-<td align="center"><a href="#">Coming soon</a></td>
+<td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_large_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-g 640x640 -->
-<tr><td align="left"><a href="#">EoMT-g</a></td>
+<tr><td align="left"><a href="configs/ade20k_panoptic_eomt_giant_640.yaml">EoMT-g</a></td>
 <td align="center">640x640</td>
 <td align="center">55</td>
 <td align="center">51.3</td>
-<td align="center"><a href="#">Coming soon</a></td>
+<td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_giant_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-g 1280x1280 -->
-<tr><td align="left"><a href="#">EoMT-g</a></td>
+<tr><td align="left"><a href="configs/ade20k_panoptic_eomt_giant_1280.yaml">EoMT-g</a></td>
 <td align="center">1280x1280</td>
 <td align="center">12</td>
 <td align="center">52.8</td>
-<td align="center"><a href="#">Coming soon</a></td>
+<td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_giant_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 </tbody></table>
 
@@ -173,11 +253,11 @@ Please refer to this [GitHub repository](https://github.com/cemsaz/city-scapes-s
 <th valign="bottom">Download</th>
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 1024x1024 -->
-<tr><td align="left"><a href="#">EoMT-L</a></td>
+<tr><td align="left"><a href="configs/cityscapes_semantic_eomt_large_1024.yaml">EoMT-L</a></td>
 <td align="center">1024x1024</td>
 <td align="center">25</td>
 <td align="center">84.2</td>
-<td align="center"><a href="#">Coming soon</a></td>
+<td align="center"><a href="https://huggingface.co/tue-mps/cityscapes_semantic_eomt_large_1024/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 </tbody></table>
 
@@ -193,11 +273,11 @@ Please refer to this [GitHub repository](https://github.com/cemsaz/city-scapes-s
 <th valign="bottom">Download</th>
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 512x512 -->
-<tr><td align="left"><a href="#">EoMT-L</a></td>
+<tr><td align="left"><a href="configs/ade20k_semantic_eomt_large_512.yaml">EoMT-L</a></td>
 <td align="center">512x512</td>
 <td align="center">92</td>
 <td align="center">58.4</td>
-<td align="center"><a href="#">Coming soon</a></td>
+<td align="center"><a href="https://huggingface.co/tue-mps/ade20k_semantic_eomt_large_512/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 </tbody></table>
 
@@ -211,30 +291,31 @@ Please refer to this [GitHub repository](https://github.com/cemsaz/city-scapes-s
 <th valign="bottom">Config</th>
 <th valign="bottom">Input size</th>
 <th valign="bottom">FPS</th>
-<th valign="bottom">AP</th>
+<th valign="bottom">mAP</th>
 <th valign="bottom">Download</th>
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 640x640 -->
-<tr><td align="left"><a href="#">EoMT-L</a></td>
+<tr><td align="left"><a href="configs/coco_instance_eomt_large_640.yaml">EoMT-L</a></td>
 <td align="center">640x640</td>
 <td align="center">128</td>
-<td align="center">45.2</td>
-<td align="center"><a href="#">Coming soon</a></td>
+<td align="center">45.2*</td>
+<td align="center"><a href="https://huggingface.co/tue-mps/coco_instance_eomt_large_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-L 1280x1280 -->
-<tr><td align="left"><a href="#">EoMT-L</a></td>
+<tr><td align="left"><a href="configs/coco_instance_eomt_large_1280.yaml">EoMT-L</a></td>
 <td align="center">1280x1280</td>
 <td align="center">30</td>
-<td align="center">48.8</td>
-<td align="center"><a href="#">Coming soon</a></td>
+<td align="center">48.8*</td>
+<td align="center"><a href="https://huggingface.co/tue-mps/coco_instance_eomt_large_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 </tbody></table>
 
+*<sub>\*(mAP reported using pycocotools; TorchMetrics (used by default) yields ~0.7 lower)</sub>*
 
 ---
 
 ## Citation
-If you find this project helpful for your research, please consider citing the following BibTeX entry.
+If you find this work useful in your research, please cite it using the BibTeX entry below:
 
 ```BibTeX
 @inproceedings{kerssies2025eomt,
@@ -244,3 +325,16 @@ If you find this project helpful for your research, please consider citing the f
   year      = {2025},
 }
 ```
+
+---
+
+## Acknowledgements
+
+This project builds upon code from the following libraries and repositories:
+
+- [Hugging Face Transformers](https://github.com/huggingface/transformers) (Apache-2.0 License)  
+- [PyTorch Image Models (timm)](https://github.com/huggingface/pytorch-image-models) (Apache-2.0 License)  
+- [PyTorch Lightning](https://github.com/Lightning-AI/pytorch-lightning) (Apache-2.0 License)  
+- [TorchMetrics](https://github.com/Lightning-AI/torchmetrics) (Apache-2.0 License)  
+- [Mask2Former](https://github.com/facebookresearch/Mask2Former) (Apache-2.0 License)
+- [Detectron2](https://github.com/facebookresearch/detectron2) (Apache-2.0 License)
