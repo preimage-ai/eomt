@@ -109,9 +109,9 @@ python3 main.py fit \
   --data.path /path/to/dataset
 ```
 
-This trains the `EoMT-L` model on COCO panoptic segmentation with a 640×640 input size using 4 GPUs. Each GPU processes a batch of 4 images, for a total batch size of 16.  
+This command trains the `EoMT-L` model with a 640×640 input size on COCO panoptic segmentation using 4 GPUs. Each GPU processes a batch of 4 images, for a total batch size of 16.  
 
-✅ The total batch size must be `devices × batch_size = 16`  
+✅ Make sure the total batch size is `devices × batch_size = 16`  
 🔧 Replace `/path/to/dataset` with the directory containing the dataset zip files.
 
 > This configuration takes ~6 hours on 4×NVIDIA H100 GPUs, each using ~26GB VRAM.
@@ -119,13 +119,12 @@ This trains the `EoMT-L` model on COCO panoptic segmentation with a 640×640 inp
 To fine-tune a pre-trained EoMT model, add:
 
 ```bash
-  --model.load_ckpt_class_head False
   --model.ckpt_path /path/to/pytorch_model.bin \
+  --model.load_ckpt_class_head False
 ```
 
-🔧 Replace `/path/to/pytorch_model.bin` with the checkpoint to fine-tune.  
-
-> `--model.load_ckpt_class_head False` skips loading the class prediction head when fine-tuning on a dataset with different categories.  
+🔧 Replace `/path/to/pytorch_model.bin` with the path to the checkpoint to fine-tune.  
+> `--model.load_ckpt_class_head False` skips loading the classification head when fine-tuning on a dataset with different classes. 
 
 ### Evaluating
 
@@ -140,10 +139,10 @@ python3 main.py validate \
   --model.ckpt_path /path/to/pytorch_model.bin
 ```
 
-This evaluates the same `EoMT-L` model using 4 GPUs with a batch size of 4 per GPU.
+This command evaluates the same `EoMT-L` model using 4 GPUs with a batch size of 4 per GPU.
 
 🔧 Replace `/path/to/dataset` with the directory containing the dataset zip files.  
-🔧 Replace `/path/to/pytorch_model.bin` with the checkpoint to evaluate.
+🔧 Replace `/path/to/pytorch_model.bin` with the path to the checkpoint to evaluate.
 
 A [notebook](inference.ipynb) is also available for quick inference and visualization with pre-trained models.
 
@@ -198,8 +197,6 @@ A [notebook](inference.ipynb) is also available for quick inference and visualiz
 
 #### ADE20K
 
-> ADE20K panoptic results use COCO pre-training. See above for how to load a checkpoint.
-
 <table><tbody>
 <!-- START TABLE -->
 <!-- TABLE HEADER -->
@@ -213,31 +210,32 @@ A [notebook](inference.ipynb) is also available for quick inference and visualiz
 <tr><td align="left"><a href="configs/ade20k_panoptic_eomt_large_640.yaml">EoMT-L</a></td>
 <td align="center">640x640</td>
 <td align="center">128</td>
-<td align="center">50.6</td>
+<td align="center">50.6<sup>C</sup></td>
 <td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_large_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-L 1280x1280 -->
 <tr><td align="left"><a href="configs/ade20k_panoptic_eomt_large_1280.yaml">EoMT-L</a></td>
 <td align="center">1280x1280</td>
 <td align="center">30</td>
-<td align="center">51.7</td>
+<td align="center">51.7<sup>C</sup></td>
 <td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_large_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-g 640x640 -->
 <tr><td align="left"><a href="configs/ade20k_panoptic_eomt_giant_640.yaml">EoMT-g</a></td>
 <td align="center">640x640</td>
 <td align="center">55</td>
-<td align="center">51.3</td>
+<td align="center">51.3<sup>C</sup></td>
 <td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_giant_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-g 1280x1280 -->
 <tr><td align="left"><a href="configs/ade20k_panoptic_eomt_giant_1280.yaml">EoMT-g</a></td>
 <td align="center">1280x1280</td>
 <td align="center">12</td>
-<td align="center">52.8</td>
+<td align="center">52.8<sup>C</sup></td>
 <td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_giant_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 </tbody></table>
+<small><em><sup>C</sup> models pre-trained on COCO panoptic segmentation. See above for how to load a checkpoint.</em></small>
 
 ### Semantic Segmentation
 
@@ -310,7 +308,7 @@ A [notebook](inference.ipynb) is also available for quick inference and visualiz
 </tr>
 </tbody></table>
 
-*<sub>\*(mAP reported using pycocotools; TorchMetrics (used by default) yields ~0.7 lower)</sub>*
+*<sub>\* mAP reported using pycocotools; TorchMetrics (used by default) yields ~0.7 lower.</sub>*
 
 ---
 
