@@ -22,11 +22,11 @@ Welcome to the official repository for "**Your ViT is Secretly an Image Segmenta
 
 ## Overview
 
-We present the **Encoder-only Mask Transformer** (EoMT), a minimalist image segmentation model purely using a plain Vision Transformer. No adapters, no decoders, just the ViT.
+We present the **Encoder-only Mask Transformer** (EoMT), a minimalist image segmentation model built solely on a plain Vision Transformer. No adapters, no decoders, just the ViT.
 
-Leveraging large, extensively pre-trained ViTs, EoMT achieves accuracy similar to state-of-the-art methods that rely on complex, task-specific components. At the same time, EoMT is significantly faster thanks to its simplicity, e.g., up to 4× faster with ViT-L.  
+Leveraging large, extensively pre-trained ViTs, EoMT achieves accuracy similar to state-of-the-art methods that rely on complex, task-specific components. At the same time, it is significantly faster thanks to its simplicity, e.g., up to 4× faster with ViT-L.  
 
-EoMT demonstrates that architectural complexity is not required, raw Transformer power is all you need. Turns out, *your ViT is secretly an image segmentation model*. 
+Turns out, *your ViT is secretly an image segmentation model*. EoMT demonstrates that architectural complexity isn’t necessary, plain Transformer power is all you need.
 
 ---
 
