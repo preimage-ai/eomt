@@ -7,28 +7,15 @@
 <sup>3</sup> RWTH Aachen University  
 <sup>\*</sup> _Work done while visiting RWTH Aachen University._
 
-
----
-
-Welcome to the official repository for "**Your ViT is Secretly an Image Segmentation Model**".
-
-📄 **Paper**: [arXiv](https://arxiv.org/abs/2503.19108)  
-👁️ **Project page**: [https://tue-mps.github.io/eomt](https://tue-mps.github.io/eomt)  
-🛎️ **Stay updated**: [Watch the repository](https://github.com/tue-mps/eomt/subscription)  
-🐞 **Questions or issues?** [Open a GitHub issue](https://github.com/tue-mps/eomt/issues)  
-📬 **Contact**: t.kerssies[at]tue[dot]nl
-
----
+Welcome to the official repository for the CVPR 2025 paper: [**Your ViT is Secretly an Image Segmentation Model**](https://arxiv.org/abs/2503.19108).
 
 ## Overview
 
-We present the **Encoder-only Mask Transformer** (EoMT), a minimalist image segmentation model that repurposes a plain Vision Transformer to perform segmentation by jointly encoding patch tokens and segmentation queries. No adapters, no decoders, just the ViT.
+We present the **Encoder-only Mask Transformer** (EoMT), a minimalist image segmentation model that repurposes the plain Vision Transformer (ViT) to perform segmentation by jointly encoding image patches and segmentation queries as tokens. No adapters, no decoders, just the ViT.
 
 Leveraging large-scale pre-trained ViTs, EoMT achieves accuracy similar to state-of-the-art methods that rely on complex, task-specific components. At the same time, it is significantly faster thanks to its simplicity, for example up to 4× faster with ViT-L.  
 
 Turns out, *your ViT is secretly an image segmentation model*. EoMT demonstrates that architectural complexity isn’t necessary, plain Transformer power is all you need.
-
----
 
 ## Installation
 
@@ -52,8 +39,6 @@ python3 -m pip install -r requirements.txt
 ```bash
 wandb login
 ```
-
----
 
 ## Data preparation
 
@@ -88,8 +73,6 @@ wget --load-cookies cookies.txt --content-disposition https://www.cityscapes-dat
 ```
 
 🔧 Replace `<your_username>` and `<your_password>` with your actual [Cityscapes](https://www.cityscapes-dataset.com/) login credentials.  
-
----
 
 ## Usage
 
@@ -141,8 +124,6 @@ This command evaluates the same `EoMT-L` model using 4 GPUs with a batch size of
 🔧 Replace `/path/to/pytorch_model.bin` with the path to the checkpoint to evaluate.
 
 A [notebook](inference.ipynb) is also available for quick inference and visualization with pre-trained models.
-
----
 
 ## Model Zoo
 
@@ -307,8 +288,6 @@ A [notebook](inference.ipynb) is also available for quick inference and visualiz
 
 *<sub>\* mAP reported using pycocotools; TorchMetrics (used by default) yields ~0.7 lower.</sub>*
 
----
-
 ## Citation
 If you find this work useful in your research, please cite it using the BibTeX entry below:
 
@@ -320,8 +299,6 @@ If you find this work useful in your research, please cite it using the BibTeX e
   year      = {2025},
 }
 ```
-
----
 
 ## Acknowledgements
 
