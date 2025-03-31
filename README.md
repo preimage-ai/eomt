@@ -11,7 +11,7 @@ Welcome to the official repository for the CVPR 2025 paper: [**Your ViT is Secre
 
 ## Overview
 
-We present the **Encoder-only Mask Transformer** (EoMT), a minimalist image segmentation model that repurposes the plain Vision Transformer (ViT) to perform segmentation by jointly encoding image patches and segmentation queries as tokens. No adapters, no decoders, just the ViT.
+We present the **Encoder-only Mask Transformer (EoMT)**, a minimalist image segmentation model that repurposes a plain Vision Transformer (ViT) to jointly encode image patches and segmentation queries as tokens. No adapters. No decoders. Just the ViT.
 
 Leveraging large-scale pre-trained ViTs, EoMT achieves accuracy similar to state-of-the-art methods that rely on complex, task-specific components. At the same time, it is significantly faster thanks to its simplicity, for example up to 4× faster with ViT-L.  
 
@@ -123,7 +123,7 @@ This command evaluates the same `EoMT-L` model using 4 GPUs with a batch size of
 🔧 Replace `/path/to/dataset` with the directory containing the dataset zip files.  
 🔧 Replace `/path/to/pytorch_model.bin` with the path to the checkpoint to evaluate.
 
-A [notebook](inference.ipynb) is also available for quick inference and visualization with pre-trained models.
+A [notebook](inference.ipynb) is available for quick inference and visualization with auto-downloaded pre-trained models.
 
 ## Model Zoo
 
