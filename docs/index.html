@@ -145,10 +145,10 @@
         <h2 class="title is-3">Overview</h2>
         <div class="content has-text-justified">
           <p>
-            We present the <b>Encoder-only Mask Transformer</b> (EoMT), a minimalist image segmentation model built solely on a plain Vision Transformer. No adapters, no decoders, just the ViT.
+            We present the <b>Encoder-only Mask Transformer</b> (EoMT), a minimalist image segmentation model that repurposes a plain Vision Transformer to perform segmentation by jointly encoding patch tokens and segmentation queries. No adapters, no decoders, just the ViT.
           </p>
           <p>
-            Leveraging large, extensively pre-trained ViTs, EoMT achieves accuracy similar to state-of-the-art methods that rely on complex, task-specific components. At the same time, it is significantly faster thanks to its simplicity, e.g., up to 4× faster with ViT-L.           </p>
+            Leveraging large-scale pre-trained ViTs, EoMT achieves accuracy similar to state-of-the-art methods that rely on complex, task-specific components. At the same time, it is significantly faster thanks to its simplicity, for example up to 4× faster with ViT-L.  
           <p>
             Turns out, <em>your ViT is secretly an image segmentation model</em>. EoMT demonstrates that architectural complexity isn’t necessary, plain Transformer power is all you need.
           </p>
@@ -168,10 +168,11 @@
   </div>
 </section>
 
-<section class="section" id="BibTeX">
-  <div class="container is-max-desktop content">
-    <h2 class="title">BibTeX</h2>
-    <pre><code>@inproceedings{kerssies2025eomt,
+<div class="container is-max-desktop content">
+  <div class="has-text-centered">
+    <h2 class="title">Citation</h2>
+  </div>
+  <pre><code>@inproceedings{kerssies2025eomt,
   author     = {Kerssies, Tommie and Cavagnero, Niccolò and Hermans, Alexander and Norouzi, Narges and Averta, Giuseppe and Leibe, Bastian and Dubbelman, Gijs and de Geus, Daan},
   title      = {Your ViT is Secretly an Image Segmentation Model},
   booktitle  = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},

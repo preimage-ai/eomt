@@ -22,9 +22,9 @@ Welcome to the official repository for "**Your ViT is Secretly an Image Segmenta
 
 ## Overview
 
-We present the **Encoder-only Mask Transformer** (EoMT), a minimalist image segmentation model built solely on a plain Vision Transformer. No adapters, no decoders, just the ViT.
+We present the **Encoder-only Mask Transformer** (EoMT), a minimalist image segmentation model that repurposes a plain Vision Transformer to perform segmentation by jointly encoding patch tokens and segmentation queries. No adapters, no decoders, just the ViT.
 
-Leveraging large, extensively pre-trained ViTs, EoMT achieves accuracy similar to state-of-the-art methods that rely on complex, task-specific components. At the same time, it is significantly faster thanks to its simplicity, e.g., up to 4× faster with ViT-L.  
+Leveraging large-scale pre-trained ViTs, EoMT achieves accuracy similar to state-of-the-art methods that rely on complex, task-specific components. At the same time, it is significantly faster thanks to its simplicity, for example up to 4× faster with ViT-L.  
 
 Turns out, *your ViT is secretly an image segmentation model*. EoMT demonstrates that architectural complexity isn’t necessary, plain Transformer power is all you need.
 
@@ -46,10 +46,6 @@ conda create -n EoMT python==3.12
 conda activate EoMT
 python3 -m pip install -r requirements.txt
 ```
-
----
-
-## Weights & Biases
 
 [Weights & Biases](https://wandb.ai/) (wandb) is used for experiment logging and visualization. To enable wandb, log in to your account:
 
@@ -235,7 +231,8 @@ A [notebook](inference.ipynb) is also available for quick inference and visualiz
 <td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_giant_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 </tbody></table>
-<small><em><sup>C</sup> models pre-trained on COCO panoptic segmentation. See above for how to load a checkpoint.</em></small>
+
+*<sub><sup>C</sup> models pre-trained on COCO panoptic segmentation. See above for how to load a checkpoint.</sub>*
 
 ### Semantic Segmentation
 
