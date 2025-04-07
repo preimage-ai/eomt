@@ -7,7 +7,9 @@
 <sup>3</sup> RWTH Aachen University  
 <sup>\*</sup> _Work done while visiting RWTH Aachen University._
 
-Welcome to the official repository for the CVPR 2025 paper: [**Your ViT is Secretly an Image Segmentation Model**](https://arxiv.org/abs/2503.19108).
+Welcome to the official repository of [**Your ViT is Secretly an Image Segmentation Model**](https://arxiv.org/abs/2503.19108), accepted as *highlight* paper at CVPR 2025.
+
+
 
 ## Overview
 
