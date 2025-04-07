@@ -1,15 +1,14 @@
-# Your ViT is Secretly an Image Segmentation Model (CVPR 2025)
+# Your ViT is Secretly an Image Segmentation Model  
+**CVPR 2025 · Highlight Paper**
 
-*[Tommie Kerssies](https://tommiekerssies.com)¹, [Niccolò Cavagnero](https://scholar.google.com/citations?user=Pr4XHRAAAAAJ)²<sup>,</sup>\*, [Alexander Hermans](https://scholar.google.de/citations?user=V0iMeYsAAAAJ)³, [Narges Norouzi](https://scholar.google.com/citations?user=q7sm490AAAAJ)¹, [Giuseppe Averta](https://www.giuseppeaverta.me/)², [Bastian Leibe](https://scholar.google.com/citations?user=ZcULDB0AAAAJ)³, [Gijs Dubbelman](https://scholar.google.nl/citations?user=wy57br8AAAAJ)¹, [Daan de Geus](https://ddegeus.github.io)¹<sup>,</sup>³*
+**[Tommie Kerssies](https://tommiekerssies.com)¹, [Niccolò Cavagnero](https://scholar.google.com/citations?user=Pr4XHRAAAAAJ)²\*, [Alexander Hermans](https://scholar.google.de/citations?user=V0iMeYsAAAAJ)³, [Narges Norouzi](https://scholar.google.com/citations?user=q7sm490AAAAJ)¹, [Giuseppe Averta](https://www.giuseppeaverta.me/)², [Bastian Leibe](https://scholar.google.com/citations?user=ZcULDB0AAAAJ)³, [Gijs Dubbelman](https://scholar.google.nl/citations?user=wy57br8AAAAJ)¹, [Daan de Geus](https://ddegeus.github.io)¹,³**
 
-<sup>1</sup> Eindhoven University of Technology  
-<sup>2</sup> Polytechnic of Turin  
-<sup>3</sup> RWTH Aachen University  
-<sup>\*</sup> _Work done while visiting RWTH Aachen University._
+¹ Eindhoven University of Technology  
+² Polytechnic of Turin  
+³ RWTH Aachen University  
+\* Work done while visiting RWTH Aachen University
 
-Welcome to the official repository of [**Your ViT is Secretly an Image Segmentation Model**](https://arxiv.org/abs/2503.19108), accepted as *highlight* paper at CVPR 2025.
-
-
+📄 **Paper:** [arXiv:2503.19108](https://arxiv.org/abs/2503.19108)
 
 ## Overview
 
@@ -17,7 +16,7 @@ We present the **Encoder-only Mask Transformer (EoMT)**, a minimalist image segm
 
 Leveraging large-scale pre-trained ViTs, EoMT achieves accuracy similar to state-of-the-art methods that rely on complex, task-specific components. At the same time, it is significantly faster thanks to its simplicity, for example up to 4× faster with ViT-L.  
 
-Turns out, *your ViT is secretly an image segmentation model*. EoMT demonstrates that architectural complexity isn’t necessary, plain Transformer power is all you need.
+Turns out, *your ViT is secretly an image segmentation model*. EoMT shows that architectural complexity isn’t necessary, plain Transformer power is all you need.
 
 ## Installation
 
