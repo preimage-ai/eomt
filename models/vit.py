@@ -4,6 +4,7 @@
 # ---------------------------------------------------------------
 
 
+from typing import Optional
 import timm
 import torch
 import torch.nn as nn
@@ -15,12 +16,13 @@ class ViT(nn.Module):
         img_size: tuple[int, int],
         patch_size=16,
         backbone_name="vit_large_patch14_reg4_dinov2",
+        ckpt_path: Optional[str] = None,
     ):
         super().__init__()
 
         self.backbone = timm.create_model(
             backbone_name,
-            pretrained=True,
+            pretrained=ckpt_path is None,
             img_size=img_size,
             patch_size=patch_size,
             num_classes=0,

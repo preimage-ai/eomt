@@ -500,24 +500,27 @@ class LightningModule(lightning.LightningModule):
             )
 
     def _on_eval_end_semantic(self, log_prefix):
-        rank_zero_info(
-            f"{bold_green}mIoU: {self.trainer.callback_metrics[f'{log_prefix}_iou_all'] * 100:.1f}{reset}"
-        )
+        if not self.trainer.sanity_checking:
+            rank_zero_info(
+                f"{bold_green}mIoU: {self.trainer.callback_metrics[f'{log_prefix}_iou_all'] * 100:.1f}{reset}"
+            )
 
     def _on_eval_end_instance(self, log_prefix):
-        rank_zero_info(
-            f"{bold_green}mAP All: {self.trainer.callback_metrics[f'{log_prefix}_ap_all'] * 100:.1f} | "
-            f"mAP Small: {self.trainer.callback_metrics[f'{log_prefix}_ap_small_all'] * 100:.1f} | "
-            f"mAP Medium: {self.trainer.callback_metrics[f'{log_prefix}_ap_medium_all'] * 100:.1f} | "
-            f"mAP Large: {self.trainer.callback_metrics[f'{log_prefix}_ap_large_all'] * 100:.1f}{reset}"
-        )
+        if not self.trainer.sanity_checking:
+            rank_zero_info(
+                f"{bold_green}mAP All: {self.trainer.callback_metrics[f'{log_prefix}_ap_all'] * 100:.1f} | "
+                f"mAP Small: {self.trainer.callback_metrics[f'{log_prefix}_ap_small_all'] * 100:.1f} | "
+                f"mAP Medium: {self.trainer.callback_metrics[f'{log_prefix}_ap_medium_all'] * 100:.1f} | "
+                f"mAP Large: {self.trainer.callback_metrics[f'{log_prefix}_ap_large_all'] * 100:.1f}{reset}"
+            )
 
     def _on_eval_end_panoptic(self, log_prefix):
-        rank_zero_info(
-            f"{bold_green}PQ All: {self.trainer.callback_metrics[f'{log_prefix}_pq_all'] * 100:.1f} | "
-            f"PQ Things: {self.trainer.callback_metrics[f'{log_prefix}_pq_things'] * 100:.1f} | "
-            f"PQ Stuff: {self.trainer.callback_metrics[f'{log_prefix}_pq_stuff'] * 100:.1f}{reset}"
-        )
+        if not self.trainer.sanity_checking:
+            rank_zero_info(
+                f"{bold_green}PQ All: {self.trainer.callback_metrics[f'{log_prefix}_pq_all'] * 100:.1f} | "
+                f"PQ Things: {self.trainer.callback_metrics[f'{log_prefix}_pq_things'] * 100:.1f} | "
+                f"PQ Stuff: {self.trainer.callback_metrics[f'{log_prefix}_pq_stuff'] * 100:.1f}{reset}"
+            )
 
     @torch.compiler.disable
     def plot_semantic(
