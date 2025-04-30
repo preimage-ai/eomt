@@ -113,6 +113,7 @@ To evaluate a pre-trained EoMT model, run:
 ```bash
 python3 main.py validate \
   -c configs/coco/panoptic/eomt_large_640.yaml \
+  --model.network.masked_attn_enabled False \
   --trainer.devices 4 \
   --data.batch_size 4 \
   --data.path /path/to/dataset \
