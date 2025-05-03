@@ -22,17 +22,27 @@ from training.lightning_module import LightningModule
 from datasets.lightning_data_module import LightningDataModule
 
 
-_orig = _t.raise_union_unexpected_value
+_orig_single = _t.raise_unexpected_value
 
 
-def _raise_root(subtypes, val, vals):
-    for exc in reversed(vals):
-        if isinstance(exc, Exception):
-            raise exc
-    return _orig(subtypes, val, vals)
+def _raise_single(*args, exception=None, **kwargs):
+    if isinstance(exception, Exception):
+        raise exception
+    return _orig_single(*args, exception=exception, **kwargs)
 
 
-_t.raise_union_unexpected_value = _raise_root
+_orig_union = _t.raise_union_unexpected_value
+
+
+def _raise_union(subtypes, val, vals):
+    for e in reversed(vals):
+        if isinstance(e, Exception):
+            raise e
+    return _orig_union(subtypes, val, vals)
+
+
+_t.raise_unexpected_value = _raise_single
+_t.raise_union_unexpected_value = _raise_union
 
 
 def _should_check_val_fx(self: _TrainingEpochLoop, data_fetcher: _DataFetcher) -> bool:
