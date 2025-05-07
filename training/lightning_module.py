@@ -388,13 +388,13 @@ class LightningModule(lightning.LightningModule):
             if log_per_class:
                 for class_idx, iou in enumerate(iou_per_class):
                     self.log(
-                        f"{log_prefix}_iou_class_{class_idx}{block_postfix}",
+                        f"Metrics/{log_prefix}_iou_class_{class_idx}{block_postfix}",
                         iou,
                     )
 
             iou_all = float(iou_per_class.mean())
             self.log(
-                f"{log_prefix}_iou_all{block_postfix}",
+                f"Metrics/{log_prefix}_iou_all{block_postfix}",
                 iou_all,
                 prog_bar=True,
             )
@@ -406,28 +406,28 @@ class LightningModule(lightning.LightningModule):
 
             block_postfix = self.block_postfix(i)
             self.log(
-                f"{log_prefix}_ap_all{block_postfix}",
+                f"Metrics/{log_prefix}_ap_all{block_postfix}",
                 results["map"],
                 prog_bar=True,
             )
             self.log(
-                f"{log_prefix}_ap_small_all{block_postfix}",
+                f"Metrics/{log_prefix}_ap_small_all{block_postfix}",
                 results["map_small"],
             )
             self.log(
-                f"{log_prefix}_ap_medium_all{block_postfix}",
+                f"Metrics/{log_prefix}_ap_medium_all{block_postfix}",
                 results["map_medium"],
             )
             self.log(
-                f"{log_prefix}_ap_large_all{block_postfix}",
+                f"Metrics/{log_prefix}_ap_large_all{block_postfix}",
                 results["map_large"],
             )
             self.log(
-                f"{log_prefix}_ap_50_all{block_postfix}",
+                f"Metrics/{log_prefix}_ap_50_all{block_postfix}",
                 results["map_50"],
             )
             self.log(
-                f"{log_prefix}_ap_75_all{block_postfix}",
+                f"Metrics/{log_prefix}_ap_75_all{block_postfix}",
                 results["map_75"],
             )
 
@@ -442,25 +442,25 @@ class LightningModule(lightning.LightningModule):
             if log_per_class:
                 for class_idx in range(len(pq)):
                     self.log(
-                        f"{log_prefix}_pq_class_{class_idx}{block_postfix}",
+                        f"Metrics/{log_prefix}_pq_class_{class_idx}{block_postfix}",
                         pq[class_idx],
                     )
                     self.log(
-                        f"{log_prefix}_sq_class_{class_idx}{block_postfix}",
+                        f"Metrics/{log_prefix}_sq_class_{class_idx}{block_postfix}",
                         sq[class_idx],
                     )
                     self.log(
-                        f"{log_prefix}_rq_class_{class_idx}{block_postfix}",
+                        f"Metrics/{log_prefix}_rq_class_{class_idx}{block_postfix}",
                         rq[class_idx],
                     )
 
             self.log(
-                f"{log_prefix}_pq_all{block_postfix}",
+                f"Metrics/{log_prefix}_pq_all{block_postfix}",
                 pq.mean(),
                 prog_bar=True,
             )
-            self.log(f"{log_prefix}_sq_all{block_postfix}", sq.mean())
-            self.log(f"{log_prefix}_rq_all{block_postfix}", rq.mean())
+            self.log(f"Metrics/{log_prefix}_sq_all{block_postfix}", sq.mean())
+            self.log(f"Metrics/{log_prefix}_rq_all{block_postfix}", rq.mean())
 
             num_things = len(metric.things)
             pq_things, sq_things, rq_things = (
@@ -475,51 +475,51 @@ class LightningModule(lightning.LightningModule):
             )
 
             self.log(
-                f"{log_prefix}_pq_things{block_postfix}",
+                f"Metrics/{log_prefix}_pq_things{block_postfix}",
                 pq_things.mean(),
             )
             self.log(
-                f"{log_prefix}_sq_things{block_postfix}",
+                f"Metrics/{log_prefix}_sq_things{block_postfix}",
                 sq_things.mean(),
             )
             self.log(
-                f"{log_prefix}_rq_things{block_postfix}",
+                f"Metrics/{log_prefix}_rq_things{block_postfix}",
                 rq_things.mean(),
             )
             self.log(
-                f"{log_prefix}_pq_stuff{block_postfix}",
+                f"Metrics/{log_prefix}_pq_stuff{block_postfix}",
                 pq_stuff.mean(),
             )
             self.log(
-                f"{log_prefix}_sq_stuff{block_postfix}",
+                f"Metrics/{log_prefix}_sq_stuff{block_postfix}",
                 sq_stuff.mean(),
             )
             self.log(
-                f"{log_prefix}_rq_stuff{block_postfix}",
+                f"Metrics/{log_prefix}_rq_stuff{block_postfix}",
                 rq_stuff.mean(),
             )
 
     def _on_eval_end_semantic(self, log_prefix):
         if not self.trainer.sanity_checking:
             rank_zero_info(
-                f"{bold_green}mIoU: {self.trainer.callback_metrics[f'{log_prefix}_iou_all'] * 100:.1f}{reset}"
+                f"{bold_green}mIoU: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_iou_all'] * 100:.1f}{reset}"
             )
 
     def _on_eval_end_instance(self, log_prefix):
         if not self.trainer.sanity_checking:
             rank_zero_info(
-                f"{bold_green}mAP All: {self.trainer.callback_metrics[f'{log_prefix}_ap_all'] * 100:.1f} | "
-                f"mAP Small: {self.trainer.callback_metrics[f'{log_prefix}_ap_small_all'] * 100:.1f} | "
-                f"mAP Medium: {self.trainer.callback_metrics[f'{log_prefix}_ap_medium_all'] * 100:.1f} | "
-                f"mAP Large: {self.trainer.callback_metrics[f'{log_prefix}_ap_large_all'] * 100:.1f}{reset}"
+                f"{bold_green}mAP All: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_ap_all'] * 100:.1f} | "
+                f"mAP Small: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_ap_small_all'] * 100:.1f} | "
+                f"mAP Medium: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_ap_medium_all'] * 100:.1f} | "
+                f"mAP Large: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_ap_large_all'] * 100:.1f}{reset}"
             )
 
     def _on_eval_end_panoptic(self, log_prefix):
         if not self.trainer.sanity_checking:
             rank_zero_info(
-                f"{bold_green}PQ All: {self.trainer.callback_metrics[f'{log_prefix}_pq_all'] * 100:.1f} | "
-                f"PQ Things: {self.trainer.callback_metrics[f'{log_prefix}_pq_things'] * 100:.1f} | "
-                f"PQ Stuff: {self.trainer.callback_metrics[f'{log_prefix}_pq_stuff'] * 100:.1f}{reset}"
+                f"{bold_green}PQ All: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_pq_all'] * 100:.1f} | "
+                f"PQ Things: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_pq_things'] * 100:.1f} | "
+                f"PQ Stuff: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_pq_stuff'] * 100:.1f}{reset}"
             )
 
     @torch.compiler.disable
