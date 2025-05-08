@@ -108,7 +108,6 @@ class LightningModule(lightning.LightningModule):
                 )
 
         self.log = torch.compiler.disable(self.log)  # type: ignore
-        self.masked_attn_enabled = self.network.masked_attn_enabled
 
     def configure_optimizers(self):
         encoder_param_names = {
@@ -374,8 +373,7 @@ class LightningModule(lightning.LightningModule):
                 metric.false_positives[continuous_id] += 1
 
     def block_postfix(self, block_idx):
-        # If masked attention is not enabled, there is only one block
-        if not self.masked_attn_enabled:
+        if not self.network.masked_attn_enabled:
             return ""
         return (
             f"_block_{-len(self.metrics) + block_idx + 1}"
