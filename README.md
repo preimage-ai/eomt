@@ -30,8 +30,8 @@ bash Miniconda3-latest-Linux-x86_64.sh
 Then create the environment, activate it, and install the dependencies:
 
 ```bash
-conda create -n EoMT python==3.12
-conda activate EoMT
+conda create -n eomt python==3.13.2
+conda activate eomt
 python3 -m pip install -r requirements.txt
 ```
 

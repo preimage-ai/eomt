@@ -68,6 +68,7 @@ class EoMT(nn.Module):
 
         return mask_logits, class_logits
 
+    @torch.compiler.disable
     def _disable_attn_mask(self, attn_mask, prob):
         if prob < 1:
             random_queries = (

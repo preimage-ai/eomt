@@ -101,11 +101,7 @@ class LightningCLI(cli.LightningCLI):
         )
         warnings.filterwarnings(
             "ignore",
-            message=r".*Attribute 'network' is an instance of `nn\.Module` and is already saved during checkpointing.*",
-        )
-        warnings.filterwarnings(
-            "ignore",
-            message=r".*Graph break due to unsupported builtin PIL\._imaging\.fill.*",
+            message=r".*functools.partial will be a method descriptor in future Python versions*",
         )
 
         super().__init__(*args, **kwargs)
