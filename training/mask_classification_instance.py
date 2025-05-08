@@ -77,7 +77,7 @@ class MaskClassificationInstance(LightningModule):
             no_object_coefficient=no_object_coefficient,
         )
 
-        self.init_metrics_instance(self.network.num_blocks + 1)
+        self.init_metrics_instance(self.network.num_blocks + 1 if self.masked_attn_enabled else 1)
 
     def eval_step(
         self,
