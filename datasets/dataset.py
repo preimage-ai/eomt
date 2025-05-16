@@ -120,8 +120,7 @@ class Dataset(torch.utils.data.Dataset):
                 target_parent = target_folder_path_in_zip / rel_path.parent
                 target_stem = rel_path.stem.replace(img_stem_suffix, target_stem_suffix)
 
-                target_filename = target_parent / f"{target_stem}{target_suffix}"
-                target_filename = str(target_filename)
+                target_filename = (target_parent / f"{target_stem}{target_suffix}").as_posix()
 
             if self.labels_by_id:
                 if img_path.name not in self.labels_by_id:
@@ -140,9 +139,9 @@ class Dataset(torch.utils.data.Dataset):
                             continue
 
             if target_instance_zip is not None:
-                target_instance_filename = str(
+                target_instance_filename = (
                     target_instance_folder_path_in_zip / (target_stem + target_suffix)
-                )
+                ).as_posix()
 
                 if check_empty_targets:
                     with target_instance_zip.open(
@@ -162,7 +161,7 @@ class Dataset(torch.utils.data.Dataset):
                             if not labels:
                                 continue
 
-            self.imgs.append(str(img_path))
+            self.imgs.append(img_path.as_posix())
 
             if not only_annotations_json:
                 self.targets.append(target_filename)
