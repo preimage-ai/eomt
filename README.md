@@ -1,6 +1,8 @@
 # Your ViT is Secretly an Image Segmentation Model  
 **CVPR 2025 · Highlight Paper**
 
+🏆 Our newest [EoMT-7B](https://huggingface.co/tue-mps/coco_panoptic_eomt_7b_640), built on [Web-DINO-7B](https://huggingface.co/facebook/webssl-dino7b-full8b-518), sets a new state-of-the-art on COCO *val2017* at 640×640 with **58.4 PQ**, exactly matching ViT-Adapter-7B + M2F while running nearly 2× faster (32 vs 17 FPS) on the latest NVIDIA B200.
+
 **[Tommie Kerssies](https://tommiekerssies.com)¹, [Niccolò Cavagnero](https://scholar.google.com/citations?user=Pr4XHRAAAAAJ)²\*, [Alexander Hermans](https://scholar.google.de/citations?user=V0iMeYsAAAAJ)³, [Narges Norouzi](https://scholar.google.com/citations?user=q7sm490AAAAJ)¹, [Giuseppe Averta](https://www.giuseppeaverta.me/)², [Bastian Leibe](https://scholar.google.com/citations?user=ZcULDB0AAAAJ)³, [Gijs Dubbelman](https://scholar.google.nl/citations?user=wy57br8AAAAJ)¹, [Daan de Geus](https://ddegeus.github.io)¹,³**
 
 ¹ Eindhoven University of Technology  
@@ -129,7 +131,7 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 
 ## Model Zoo
 
-> All FPS values were measured on an NVIDIA H100 GPU.
+> FPS measured on NVIDIA H100, unless otherwise specified.
 
 ### Panoptic Segmentation
 
@@ -172,7 +174,16 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 <td align="center">59.2</td>
 <td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_giant_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
+<tr>
+  <td align="left">EoMT-7B</td>
+  <td align="center">640×640</td>
+  <td align="center">32*     </td>
+  <td align="center">58.4</td>
+  <td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_7b_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
+</tr>
 </tbody></table>
+
+*<sub>\* FPS measured on NVIDIA B200.</sub>*
 
 #### ADE20K
 
