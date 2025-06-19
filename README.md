@@ -1,7 +1,5 @@
 # Your ViT is Secretly an Image Segmentation Model  
-**CVPR 2025 · Highlight Paper**
-
-🏆 Our newest [EoMT-7B](https://huggingface.co/tue-mps/coco_panoptic_eomt_7b_640), built on [Web-DINO-7B](https://huggingface.co/facebook/webssl-dino7b-full8b-518), sets a new state-of-the-art on COCO *val2017* at 640×640 with **58.4 PQ**, exactly matching ViT-Adapter-7B + M2F while running nearly 2× faster (32 vs 17 FPS) on the latest NVIDIA B200.
+**CVPR 2025 ⭐ Highlight** · [📄 Paper](https://arxiv.org/abs/2503.19108)
 
 **[Tommie Kerssies](https://tommiekerssies.com)¹, [Niccolò Cavagnero](https://scholar.google.com/citations?user=Pr4XHRAAAAAJ)²\*, [Alexander Hermans](https://scholar.google.de/citations?user=V0iMeYsAAAAJ)³, [Narges Norouzi](https://scholar.google.com/citations?user=q7sm490AAAAJ)¹, [Giuseppe Averta](https://www.giuseppeaverta.me/)², [Bastian Leibe](https://scholar.google.com/citations?user=ZcULDB0AAAAJ)³, [Gijs Dubbelman](https://scholar.google.nl/citations?user=wy57br8AAAAJ)¹, [Daan de Geus](https://ddegeus.github.io)¹,³**
 
@@ -10,15 +8,13 @@
 ³ RWTH Aachen University  
 \* Work done while visiting RWTH Aachen University
 
-📄 **Paper:** [arXiv:2503.19108](https://arxiv.org/abs/2503.19108)
-
 ## Overview
 
 We present the **Encoder-only Mask Transformer (EoMT)**, a minimalist image segmentation model that repurposes a plain Vision Transformer (ViT) to jointly encode image patches and segmentation queries as tokens. No adapters. No decoders. Just the ViT.
 
 Leveraging large-scale pre-trained ViTs, EoMT achieves accuracy similar to state-of-the-art methods that rely on complex, task-specific components. At the same time, it is significantly faster thanks to its simplicity, for example up to 4× faster with ViT-L.  
 
-Turns out, *your ViT is secretly an image segmentation model*. EoMT shows that architectural complexity isn’t necessary. For segmentation, a plain Transformer is all you need.
+Turns out, *your ViT is secretly an image segmentation model*. EoMT shows that architectural complexity isn't necessary. For segmentation, a plain Transformer is all you need.
 
 ## Installation
 
@@ -148,42 +144,61 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 640x640 -->
 <tr><td align="left"><a href="configs/coco/panoptic/eomt_large_640.yaml">EoMT-L</a></td>
-<td align="center">640x640</td>
+<td align="center">640×640</td>
 <td align="center">128</td>
 <td align="center">56.0</td>
 <td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_large_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
-<!-- ROW: EoMT-L 1280x1280 -->
-<tr><td align="left"><a href="configs/coco/panoptic/eomt_large_1280.yaml">EoMT-L</a></td>
-<td align="center">1280x1280</td>
-<td align="center">30</td>
-<td align="center">58.3</td>
-<td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_large_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
 <!-- ROW: EoMT-g 640x640 -->
 <tr><td align="left"><a href="configs/coco/panoptic/eomt_giant_640.yaml">EoMT-g</a></td>
-<td align="center">640x640</td>
+<td align="center">640×640</td>
 <td align="center">55</td>
 <td align="center">57.0</td>
 <td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_giant_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
+<tr>
+  <td align="left"><a href="https://huggingface.co/facebook/webssl-dino7b-full8b-518">EoMT-7B</a></td>
+  <td align="center">640×640</td>
+  <td align="center">32*</td>
+  <td align="center">58.4</td>
+  <td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_7b_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
+</tr>
+<tr style="color: #888;">
+  <td align="left">ViT-Adapter-7B + M2F</td>
+  <td align="center">640×640</td>
+  <td align="center">17*</td>
+  <td align="center">58.4</td>
+  <td align="center">-</td>
+</tr>
+
+</tbody></table>
+
+*<sub>\* FPS measured on NVIDIA B200.</sub>*
+
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom">Config</th>
+<th valign="bottom">Input size</th>
+<th valign="bottom">FPS</th>
+<th valign="bottom">PQ</th>
+<th valign="bottom">Download</th>
+<!-- TABLE BODY -->
+<!-- ROW: EoMT-L 1280x1280 -->
+<tr><td align="left"><a href="configs/coco/panoptic/eomt_large_1280.yaml">EoMT-L</a></td>
+<td align="center">1280×1280</td>
+<td align="center">30</td>
+<td align="center">58.3</td>
+<td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_large_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
+</tr>
 <!-- ROW: EoMT-g 1280x1280 -->
 <tr><td align="left"><a href="configs/coco/panoptic/eomt_giant_1280.yaml">EoMT-g</a></td>
-<td align="center">1280x1280</td>
+<td align="center">1280×1280</td>
 <td align="center">12</td>
 <td align="center">59.2</td>
 <td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_giant_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
-<tr>
-  <td align="left">EoMT-7B</td>
-  <td align="center">640×640</td>
-  <td align="center">32*     </td>
-  <td align="center">58.4</td>
-  <td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_7b_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
 </tbody></table>
-
-*<sub>\* FPS measured on NVIDIA B200.</sub>*
 
 #### ADE20K
 
@@ -198,28 +213,39 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 640x640 -->
 <tr><td align="left"><a href="configs/ade20k/panoptic/eomt_large_640.yaml">EoMT-L</a></td>
-<td align="center">640x640</td>
+<td align="center">640×640</td>
 <td align="center">128</td>
 <td align="center">50.6<sup>C</sup></td>
 <td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_large_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
-<!-- ROW: EoMT-L 1280x1280 -->
-<tr><td align="left"><a href="configs/ade20k/panoptic/eomt_large_1280.yaml">EoMT-L</a></td>
-<td align="center">1280x1280</td>
-<td align="center">30</td>
-<td align="center">51.7<sup>C</sup></td>
-<td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_large_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
 <!-- ROW: EoMT-g 640x640 -->
 <tr><td align="left"><a href="configs/ade20k/panoptic/eomt_giant_640.yaml">EoMT-g</a></td>
-<td align="center">640x640</td>
+<td align="center">640×640</td>
 <td align="center">55</td>
 <td align="center">51.3<sup>C</sup></td>
 <td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_giant_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
+</tbody></table>
+
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom">Config</th>
+<th valign="bottom">Input size</th>
+<th valign="bottom">FPS</th>
+<th valign="bottom">PQ</th>
+<th valign="bottom">Download</th>
+<!-- TABLE BODY -->
+<!-- ROW: EoMT-L 1280x1280 -->
+<tr><td align="left"><a href="configs/ade20k/panoptic/eomt_large_1280.yaml">EoMT-L</a></td>
+<td align="center">1280×1280</td>
+<td align="center">30</td>
+<td align="center">51.7<sup>C</sup></td>
+<td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_large_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
+</tr>
 <!-- ROW: EoMT-g 1280x1280 -->
 <tr><td align="left"><a href="configs/ade20k/panoptic/eomt_giant_1280.yaml">EoMT-g</a></td>
-<td align="center">1280x1280</td>
+<td align="center">1280×1280</td>
 <td align="center">12</td>
 <td align="center">52.8<sup>C</sup></td>
 <td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_giant_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
@@ -243,7 +269,7 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 1024x1024 -->
 <tr><td align="left"><a href="configs/cityscapes/semantic/eomt_large_1024.yaml">EoMT-L</a></td>
-<td align="center">1024x1024</td>
+<td align="center">1024×1024</td>
 <td align="center">25</td>
 <td align="center">84.2</td>
 <td align="center"><a href="https://huggingface.co/tue-mps/cityscapes_semantic_eomt_large_1024/resolve/main/pytorch_model.bin">Model Weights</a></td>
@@ -263,7 +289,7 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 512x512 -->
 <tr><td align="left"><a href="configs/ade20k/semantic/eomt_large_512.yaml">EoMT-L</a></td>
-<td align="center">512x512</td>
+<td align="center">512×512</td>
 <td align="center">92</td>
 <td align="center">58.4</td>
 <td align="center"><a href="https://huggingface.co/tue-mps/ade20k_semantic_eomt_large_512/resolve/main/pytorch_model.bin">Model Weights</a></td>
@@ -285,14 +311,25 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 640x640 -->
 <tr><td align="left"><a href="configs/coco/instance/eomt_large_640.yaml">EoMT-L</a></td>
-<td align="center">640x640</td>
+<td align="center">640×640</td>
 <td align="center">128</td>
 <td align="center">45.2*</td>
 <td align="center"><a href="https://huggingface.co/tue-mps/coco_instance_eomt_large_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
+</tbody></table>
+
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom">Config</th>
+<th valign="bottom">Input size</th>
+<th valign="bottom">FPS</th>
+<th valign="bottom">mAP</th>
+<th valign="bottom">Download</th>
+<!-- TABLE BODY -->
 <!-- ROW: EoMT-L 1280x1280 -->
 <tr><td align="left"><a href="configs/coco/instance/eomt_large_1280.yaml">EoMT-L</a></td>
-<td align="center">1280x1280</td>
+<td align="center">1280×1280</td>
 <td align="center">30</td>
 <td align="center">48.8*</td>
 <td align="center"><a href="https://huggingface.co/tue-mps/coco_instance_eomt_large_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
