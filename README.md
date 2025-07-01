@@ -186,7 +186,7 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 <td align="center">-</td>
 </tr> -->
 <!-- ROW: EoMT-S 640x640 -->
-<tr><td align="left"><a href="configs/coco/panoptic/eomt_small_640_2x.yaml">EoMT-S<sup>2x</sup></a></td>
+<tr><td align="left"><a href="configs/coco/panoptic/eomt_small_640_2x.yaml">EoMT-S</a><sup>2x</sup></td>
 <td align="center">640×640</td>
 <td align="center">330</td>
 <td align="center">46.7</td>
@@ -200,7 +200,7 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 <td align="center">-</td>
 </tr> -->
 <!-- ROW: EoMT-B 640x640 -->
-<tr><td align="left"><a href="configs/coco/panoptic/eomt_base_640_2x.yaml">EoMT-B<sup>2x</sup></a></td>
+<tr><td align="left"><a href="configs/coco/panoptic/eomt_base_640_2x.yaml">EoMT-B</a><sup>2x</sup></td>
 <td align="center">640×640</td>
 <td align="center">261</td>
 <td align="center">51.6</td>

@@ -1,5 +1,5 @@
 trainer:
-  max_epochs: 24
+  max_epochs: 12
   logger:
     class_path: lightning.pytorch.loggers.wandb.WandbLogger
     init_args:
@@ -10,8 +10,8 @@ model:
   class_path: training.mask_classification_panoptic.MaskClassificationPanoptic
   init_args:
     attn_mask_annealing_enabled: True
-    attn_mask_annealing_start_steps: [29564, 73910, 118256]
-    attn_mask_annealing_end_steps: [59128, 103474, 147820]
+    attn_mask_annealing_start_steps: [14782, 36955, 59128]
+    attn_mask_annealing_end_steps: [29564, 51737, 73910]
     network:
       class_path: models.eomt.EoMT
       init_args:
