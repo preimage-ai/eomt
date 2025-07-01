@@ -18,7 +18,7 @@ Turns out, *your ViT is secretly an image segmentation model*. EoMT shows that a
 
 ## 🤗 Transformers Quick Usage Example
 
-EoMT is only available on the `main` branch of [Hugging Face Transformers](https://github.com/huggingface/transformers). To install from source:
+EoMT is also available on the `main` branch of [Hugging Face Transformers](https://github.com/huggingface/transformers). To install from source:
 
 ```bash
 pip install git+https://github.com/huggingface/transformers
