@@ -1,5 +1,5 @@
 trainer:
-  max_epochs: 12
+  max_epochs: 24
   logger:
     class_path: lightning.pytorch.loggers.wandb.WandbLogger
     init_args:
