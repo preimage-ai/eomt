@@ -1,5 +1,5 @@
 # Your ViT is Secretly an Image Segmentation Model  
-**CVPR 2025 ✨ Highlight** · [📄 Paper](https://arxiv.org/abs/2503.19108)
+**CVPR 2025 ✨ Highlight** · [📄 Paper](https://arxiv.org/abs/2503.19108) · [🤗 Transformers](https://huggingface.co/docs/transformers/main/model_doc/eomt)
 
 **[Tommie Kerssies](https://tommiekerssies.com)¹, [Niccolò Cavagnero](https://scholar.google.com/citations?user=Pr4XHRAAAAAJ)²\*, [Alexander Hermans](https://scholar.google.de/citations?user=V0iMeYsAAAAJ)³, [Narges Norouzi](https://scholar.google.com/citations?user=q7sm490AAAAJ)¹, [Giuseppe Averta](https://www.giuseppeaverta.me/)², [Bastian Leibe](https://scholar.google.com/citations?user=ZcULDB0AAAAJ)³, [Gijs Dubbelman](https://scholar.google.nl/citations?user=wy57br8AAAAJ)¹, [Daan de Geus](https://ddegeus.github.io)¹,³**
 
@@ -15,6 +15,42 @@ We present the **Encoder-only Mask Transformer (EoMT)**, a minimalist image segm
 Leveraging large-scale pre-trained ViTs, EoMT achieves accuracy similar to state-of-the-art methods that rely on complex, task-specific components. At the same time, it is significantly faster thanks to its simplicity, for example up to 4× faster with ViT-L.  
 
 Turns out, *your ViT is secretly an image segmentation model*. EoMT shows that architectural complexity isn't necessary. For segmentation, a plain Transformer is all you need.
+
+## 🤗 Transformers Quick Usage Example
+
+EoMT is only available on the `main` branch of [Hugging Face Transformers](https://github.com/huggingface/transformers). To install from source:
+
+```bash
+pip install git+https://github.com/huggingface/transformers
+```
+
+You can use EoMT for segmentation in just a few lines using the official 🤗 [EoMT in Transformers](https://huggingface.co/docs/transformers/main/model_doc/eomt):
+
+```python
+import matplotlib.pyplot as plt
+import requests
+import torch
+from PIL import Image
+from transformers import EomtForUniversalSegmentation, AutoImageProcessor
+
+model_id = "tue-mps/coco_panoptic_eomt_large_640"
+processor = AutoImageProcessor.from_pretrained(model_id)
+model = EomtForUniversalSegmentation.from_pretrained(model_id)
+
+image = Image.open(requests.get("http://images.cocodataset.org/val2017/000000039769.jpg", stream=True).raw)
+
+inputs = processor(images=image, return_tensors="pt")
+with torch.inference_mode():
+    outputs = model(**inputs)
+
+original_image_sizes = [(image.height, image.width)]
+preds = processor.post_process_panoptic_segmentation(outputs, original_image_sizes)
+
+plt.imshow(preds[0]["segmentation"])
+plt.axis("off")
+plt.title("Panoptic Segmentation")
+plt.show()
+```
 
 ## Installation
 
@@ -137,47 +173,41 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 <!-- START TABLE -->
 <!-- TABLE HEADER -->
 <th valign="bottom">Config</th>
-<th valign="bottom">Schedule</th>
 <th valign="bottom">Input size</th>
 <th valign="bottom">FPS</th>
 <th valign="bottom">PQ</th>
 <th valign="bottom">Download</th>
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-S 640x640 -->
-<tr><td align="left"><a href="configs/coco/panoptic/eomt_small_640.yaml">EoMT-S</a></td>
-<td align="center">1x</td>
+<!-- <tr><td align="left"><a href="configs/coco/panoptic/eomt_small_640_1x.yaml">EoMT-S</a></td>
 <td align="center">640×640</td>
 <td align="center">330</td>
 <td align="center">44.7</td>
-<td align="center">Coming Soon</td>
-</tr>
+<td align="center">-</td>
+</tr> -->
 <!-- ROW: EoMT-S 640x640 -->
-<tr><td align="left"><a href="configs/coco/panoptic/eomt_small_640.yaml">EoMT-S</a><sup>†</sup></td>
-<td align="center">2x</td>
+<tr><td align="left"><a href="configs/coco/panoptic/eomt_small_640_2x.yaml">EoMT-S<sup>2x</sup></a></td>
 <td align="center">640×640</td>
 <td align="center">330</td>
 <td align="center">46.7</td>
-<td align="center">Coming Soon</td>
+<td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_small_640_2x/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-B 640x640 -->
-<tr><td align="left"><a href="configs/coco/panoptic/eomt_base_640.yaml">EoMT-B</a></td>
-<td align="center">1x</td>
+<!-- <tr><td align="left"><a href="configs/coco/panoptic/eomt_base_640_1x.yaml">EoMT-B</a></td>
 <td align="center">640×640</td>
 <td align="center">261</td>
 <td align="center">50.6</td>
-<td align="center">Coming Soon</td>
-</tr>
+<td align="center">-</td>
+</tr> -->
 <!-- ROW: EoMT-B 640x640 -->
-<tr><td align="left"><a href="configs/coco/panoptic/eomt_base_640.yaml">EoMT-B</a><sup>†</sup></td>
-<td align="center">2x</td>
+<tr><td align="left"><a href="configs/coco/panoptic/eomt_base_640_2x.yaml">EoMT-B<sup>2x</sup></a></td>
 <td align="center">640×640</td>
 <td align="center">261</td>
 <td align="center">51.6</td>
-<td align="center">Coming Soon</td>
+<td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_base_640_2x/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-L 640x640 -->
 <tr><td align="left"><a href="configs/coco/panoptic/eomt_large_640.yaml">EoMT-L</a></td>
-<td align="center">1x</td>
 <td align="center">640×640</td>
 <td align="center">128</td>
 <td align="center">56.0</td>
@@ -185,7 +215,6 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 </tr>
 <!-- ROW: EoMT-g 640x640 -->
 <tr><td align="left"><a href="configs/coco/panoptic/eomt_giant_640.yaml">EoMT-g</a></td>
-<td align="center">1x</td>
 <td align="center">640×640</td>
 <td align="center">55</td>
 <td align="center">57.0</td>
@@ -193,25 +222,21 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 </tr>
 <tr>
   <td align="left"><a href="https://huggingface.co/facebook/webssl-dino7b-full8b-518">EoMT-7B</a></td>
-  <td align="center">1x</td>
   <td align="center">640×640</td>
   <td align="center">32*</td>
   <td align="center">58.4</td>
   <td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_7b_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
-<tr style="color: #888;">
-  <td align="left">ViT-Adapter-7B + M2F</td>
-  <td align="center">1x</td>
-  <td align="center">640×640</td>
-  <td align="center">17*</td>
-  <td align="center">58.4</td>
-  <td align="center">-</td>
+<tr>
+  <td align="left"><em>ViT-Adapter-7B + M2F</em></td>
+  <td align="center"><em>640×640</em></td>
+  <td align="center"><em>17*</em></td>
+  <td align="center"><em>58.4</em></td>
+  <td align="center"><em>-</em></td>
 </tr>
+</tbody></table>  
 
-</tbody></table>
-
-<p><sub><em><sup>†</sup>Additional checkpoints for the S and B models are available at double the default training schedule length.</em></sub></p>
-<p><sub><em>* FPS measured on NVIDIA B200.</em></sub></p>
+*<sup><sup>2x</sup> Longer training schedule. \* FPS measured on NVIDIA B200.</sup>*  
 
 <table><tbody>
 <!-- START TABLE -->
@@ -290,7 +315,7 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 </tr>
 </tbody></table>
 
-*<sub><sup>C</sup> models pre-trained on COCO panoptic segmentation. See above for how to load a checkpoint.</sub>*
+*<sub><sup>C</sup> Models pre-trained on COCO panoptic segmentation. See above for how to load a checkpoint.</sub>*
 
 ### Semantic Segmentation
 
