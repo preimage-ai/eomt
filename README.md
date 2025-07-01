@@ -137,13 +137,47 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 <!-- START TABLE -->
 <!-- TABLE HEADER -->
 <th valign="bottom">Config</th>
+<th valign="bottom">Schedule</th>
 <th valign="bottom">Input size</th>
 <th valign="bottom">FPS</th>
 <th valign="bottom">PQ</th>
 <th valign="bottom">Download</th>
 <!-- TABLE BODY -->
+<!-- ROW: EoMT-S 640x640 -->
+<tr><td align="left"><a href="configs/coco/panoptic/eomt_small_640.yaml">EoMT-S</a></td>
+<td align="center">1x</td>
+<td align="center">640×640</td>
+<td align="center">330</td>
+<td align="center">44.7</td>
+<td align="center">Coming Soon</td>
+</tr>
+<!-- ROW: EoMT-S 640x640 -->
+<tr><td align="left"><a href="configs/coco/panoptic/eomt_small_640.yaml">EoMT-S</a><sup>†</sup></td>
+<td align="center">2x</td>
+<td align="center">640×640</td>
+<td align="center">330</td>
+<td align="center">46.7</td>
+<td align="center">Coming Soon</td>
+</tr>
+<!-- ROW: EoMT-B 640x640 -->
+<tr><td align="left"><a href="configs/coco/panoptic/eomt_base_640.yaml">EoMT-B</a></td>
+<td align="center">1x</td>
+<td align="center">640×640</td>
+<td align="center">261</td>
+<td align="center">50.6</td>
+<td align="center">Coming Soon</td>
+</tr>
+<!-- ROW: EoMT-B 640x640 -->
+<tr><td align="left"><a href="configs/coco/panoptic/eomt_base_640.yaml">EoMT-B</a><sup>†</sup></td>
+<td align="center">2x</td>
+<td align="center">640×640</td>
+<td align="center">261</td>
+<td align="center">51.6</td>
+<td align="center">Coming Soon</td>
+</tr>
 <!-- ROW: EoMT-L 640x640 -->
 <tr><td align="left"><a href="configs/coco/panoptic/eomt_large_640.yaml">EoMT-L</a></td>
+<td align="center">1x</td>
 <td align="center">640×640</td>
 <td align="center">128</td>
 <td align="center">56.0</td>
@@ -151,6 +185,7 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 </tr>
 <!-- ROW: EoMT-g 640x640 -->
 <tr><td align="left"><a href="configs/coco/panoptic/eomt_giant_640.yaml">EoMT-g</a></td>
+<td align="center">1x</td>
 <td align="center">640×640</td>
 <td align="center">55</td>
 <td align="center">57.0</td>
@@ -158,6 +193,7 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 </tr>
 <tr>
   <td align="left"><a href="https://huggingface.co/facebook/webssl-dino7b-full8b-518">EoMT-7B</a></td>
+  <td align="center">1x</td>
   <td align="center">640×640</td>
   <td align="center">32*</td>
   <td align="center">58.4</td>
@@ -165,6 +201,7 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 </tr>
 <tr style="color: #888;">
   <td align="left">ViT-Adapter-7B + M2F</td>
+  <td align="center">1x</td>
   <td align="center">640×640</td>
   <td align="center">17*</td>
   <td align="center">58.4</td>
@@ -173,7 +210,8 @@ A [notebook](inference.ipynb) is available for quick inference and visualization
 
 </tbody></table>
 
-*<sub>\* FPS measured on NVIDIA B200.</sub>*
+<p><sub><em><sup>†</sup>Additional checkpoints for the S and B models are available at double the default training schedule length.</em></sub></p>
+<p><sub><em>* FPS measured on NVIDIA B200.</em></sub></p>
 
 <table><tbody>
 <!-- START TABLE -->
