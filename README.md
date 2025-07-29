@@ -18,26 +18,27 @@ Turns out, *your ViT is secretly an image segmentation model*. EoMT shows that a
 
 ## 🤗 Transformers Quick Usage Example
 
-EoMT is also available on the `main` branch of [Hugging Face Transformers](https://github.com/huggingface/transformers). To install from source:
+EoMT is also available on [Hugging Face Transformers](https://huggingface.co/docs/transformers/main/model_doc/eomt). To install:
 
 ```bash
-pip install git+https://github.com/huggingface/transformers
+pip install transformers
 ```
 
-You can use EoMT for segmentation in just a few lines using the official 🤗 [EoMT in Transformers](https://huggingface.co/docs/transformers/main/model_doc/eomt):
+You can use EoMT for segmentation in just a few lines of code. Replace `model_id` with any model from [this list](https://huggingface.co/models?library=transformers&other=eomt&sort=trending):
 
 ```python
-import matplotlib.pyplot as plt
-import requests
 import torch
 from PIL import Image
+import requests
+import matplotlib.pyplot as plt
 from transformers import EomtForUniversalSegmentation, AutoImageProcessor
 
 model_id = "tue-mps/coco_panoptic_eomt_large_640"
 processor = AutoImageProcessor.from_pretrained(model_id)
 model = EomtForUniversalSegmentation.from_pretrained(model_id)
 
-image = Image.open(requests.get("http://images.cocodataset.org/val2017/000000039769.jpg", stream=True).raw)
+image = Image.open(requests.get(
+    "http://images.cocodataset.org/val2017/000000039769.jpg", stream=True).raw)
 
 inputs = processor(images=image, return_tensors="pt")
 with torch.inference_mode():
@@ -406,8 +407,8 @@ If you find this work useful in your research, please cite it using the BibTeX e
 
 ```BibTeX
 @inproceedings{kerssies2025eomt,
-  author    = {Kerssies, Tommie and Cavagnero, Niccol\`{o} and Hermans, Alexander and Norouzi, Narges and Averta, Giuseppe and Leibe, Bastian and Dubbelman, Gijs and de Geus, Daan},
-  title     = {Your ViT is Secretly an Image Segmentation Model},
+  author    = {Kerssies, Tommie and Cavagnero, Niccol\`{o} and Hermans, Alexander and Norouzi, Narges and Averta, Giuseppe and Leibe, Bastian and Dubbelman, Gijs and {de Geus}, Daan},
+  title     = {{Your ViT is Secretly an Image Segmentation Model}},
   booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
   year      = {2025},
 }
