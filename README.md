@@ -16,42 +16,23 @@ Leveraging large-scale pre-trained ViTs, EoMT achieves accuracy similar to state
 
 Turns out, *your ViT is secretly an image segmentation model*. EoMT shows that architectural complexity isn't necessary. For segmentation, a plain Transformer is all you need.
 
-## 🤗 Transformers Quick Usage Example
+## 🚀 NEW: DINOv3 Support
 
-EoMT is also available on [Hugging Face Transformers](https://huggingface.co/docs/transformers/main/model_doc/eomt). To install:
+🔥 We're excited to announce support for **DINOv3** backbones! Our new DINOv3-based EoMT models deliver improved performance across all segmentation tasks:
 
-```bash
-pip install transformers
-```
+- **Panoptic Segmentation**: Up to 58.9 PQ on COCO with EoMT-L at 1280×1280
+- **Instance Segmentation**: Up to 49.9 mAP on COCO with EoMT-L at 1280×1280  
+- **Semantic Segmentation**: Up to 59.5 mIoU on ADE20K with EoMT-L at 512×512
 
-You can use EoMT for segmentation in just a few lines of code. Replace `model_id` with any model from [this list](https://huggingface.co/models?library=transformers&other=eomt&sort=trending):
+All of this, at the impressive speed of EoMT!
 
-```python
-import torch
-from PIL import Image
-import requests
-import matplotlib.pyplot as plt
-from transformers import EomtForUniversalSegmentation, AutoImageProcessor
+Check out our [DINOv3 Model Zoo](model_zoo/dinov3.md) for all available EoMT configurations and performance benchmarks.
 
-model_id = "tue-mps/coco_panoptic_eomt_large_640"
-processor = AutoImageProcessor.from_pretrained(model_id)
-model = EomtForUniversalSegmentation.from_pretrained(model_id)
+Thanks to the [DINOv3](https://github.com/facebookresearch/dinov3) team for providing these powerful foundation models!
 
-image = Image.open(requests.get(
-    "http://images.cocodataset.org/val2017/000000039769.jpg", stream=True).raw)
+## 🤗 Transformers
 
-inputs = processor(images=image, return_tensors="pt")
-with torch.inference_mode():
-    outputs = model(**inputs)
-
-original_image_sizes = [(image.height, image.width)]
-preds = processor.post_process_panoptic_segmentation(outputs, original_image_sizes)
-
-plt.imshow(preds[0]["segmentation"])
-plt.axis("off")
-plt.title("Panoptic Segmentation")
-plt.show()
-```
+EoMT with DINOv2 is also available on [Hugging Face Transformers](https://huggingface.co/docs/transformers/main/model_doc/eomt). See available models [here](https://huggingface.co/models?library=transformers&other=eomt&sort=trending).
 
 ## Installation
 
@@ -118,13 +99,13 @@ To train EoMT from scratch, run:
 
 ```bash
 python3 main.py fit \
-  -c configs/coco/panoptic/eomt_large_640.yaml \
+  -c configs/dinov2/coco/panoptic/eomt_large_640.yaml \
   --trainer.devices 4 \
   --data.batch_size 4 \
   --data.path /path/to/dataset
 ```
 
-This command trains the `EoMT-L` model with a 640×640 input size on COCO panoptic segmentation using 4 GPUs. Each GPU processes a batch of 4 images, for a total batch size of 16.  
+This command trains the `EoMT-L` model with a 640×640 input size on COCO panoptic segmentation using 4 GPUs. Each GPU processes a batch of 4 images, for a total batch size of 16. Switch to ```dinov3``` in the configuration path to enable the corresponding DINOv3 model.
 
 ✅ Make sure the total batch size is `devices × batch_size = 16`  
 🔧 Replace `/path/to/dataset` with the directory containing the dataset zip files.
@@ -139,7 +120,9 @@ To fine-tune a pre-trained EoMT model, add:
 ```
 
 🔧 Replace `/path/to/pytorch_model.bin` with the path to the checkpoint to fine-tune.  
-> `--model.load_ckpt_class_head False` skips loading the classification head when fine-tuning on a dataset with different classes. 
+> `--model.load_ckpt_class_head False` skips loading the classification head when fine-tuning on a dataset with different classes.
+
+> **DINOv3 Models**: When using DINOv3-based configurations, the code expects delta weights relative to DINOv3 weights by default. To disable this behavior and use absolute weights instead, add `--model.delta_weights False`. 
 
 ### Evaluating
 
@@ -147,7 +130,7 @@ To evaluate a pre-trained EoMT model, run:
 
 ```bash
 python3 main.py validate \
-  -c configs/coco/panoptic/eomt_large_640.yaml \
+  -c configs/dinov2/coco/panoptic/eomt_large_640.yaml \
   --model.network.masked_attn_enabled False \
   --trainer.devices 4 \
   --data.batch_size 4 \
@@ -160,247 +143,16 @@ This command evaluates the same `EoMT-L` model using 4 GPUs with a batch size of
 🔧 Replace `/path/to/dataset` with the directory containing the dataset zip files.  
 🔧 Replace `/path/to/pytorch_model.bin` with the path to the checkpoint to evaluate.
 
-A [notebook](inference.ipynb) is available for quick inference and visualization with auto-downloaded pre-trained models.
+A [notebook](inference.ipynb) is available for quick inference and visualization with auto-downloaded DINOv2 pre-trained models.
+
+> **DINOv3 Models**: When using DINOv3-based configurations, the code expects delta weights relative to DINOv3 weights by default. To disable this behavior and use absolute weights instead, add `--model.delta_weights False`. 
 
 ## Model Zoo
 
-> FPS measured on NVIDIA H100, unless otherwise specified.
+We provide pre-trained weights for both DINOv2- and DINOv3-based EoMT models.
 
-### Panoptic Segmentation
-
-#### COCO
-
-<table><tbody>
-<!-- START TABLE -->
-<!-- TABLE HEADER -->
-<th valign="bottom">Config</th>
-<th valign="bottom">Input size</th>
-<th valign="bottom">FPS</th>
-<th valign="bottom">PQ</th>
-<th valign="bottom">Download</th>
-<!-- TABLE BODY -->
-<!-- ROW: EoMT-S 640x640 -->
-<!-- <tr><td align="left"><a href="configs/coco/panoptic/eomt_small_640_1x.yaml">EoMT-S</a></td>
-<td align="center">640×640</td>
-<td align="center">330</td>
-<td align="center">44.7</td>
-<td align="center">-</td>
-</tr> -->
-<!-- ROW: EoMT-S 640x640 -->
-<tr><td align="left"><a href="configs/coco/panoptic/eomt_small_640_2x.yaml">EoMT-S</a><sup>2x</sup></td>
-<td align="center">640×640</td>
-<td align="center">330</td>
-<td align="center">46.7</td>
-<td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_small_640_2x/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
-<!-- ROW: EoMT-B 640x640 -->
-<!-- <tr><td align="left"><a href="configs/coco/panoptic/eomt_base_640_1x.yaml">EoMT-B</a></td>
-<td align="center">640×640</td>
-<td align="center">261</td>
-<td align="center">50.6</td>
-<td align="center">-</td>
-</tr> -->
-<!-- ROW: EoMT-B 640x640 -->
-<tr><td align="left"><a href="configs/coco/panoptic/eomt_base_640_2x.yaml">EoMT-B</a><sup>2x</sup></td>
-<td align="center">640×640</td>
-<td align="center">261</td>
-<td align="center">51.6</td>
-<td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_base_640_2x/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
-<!-- ROW: EoMT-L 640x640 -->
-<tr><td align="left"><a href="configs/coco/panoptic/eomt_large_640.yaml">EoMT-L</a></td>
-<td align="center">640×640</td>
-<td align="center">128</td>
-<td align="center">56.0</td>
-<td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_large_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
-<!-- ROW: EoMT-g 640x640 -->
-<tr><td align="left"><a href="configs/coco/panoptic/eomt_giant_640.yaml">EoMT-g</a></td>
-<td align="center">640×640</td>
-<td align="center">55</td>
-<td align="center">57.0</td>
-<td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_giant_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
-<tr>
-  <td align="left"><a href="https://huggingface.co/facebook/webssl-dino7b-full8b-518">EoMT-7B</a></td>
-  <td align="center">640×640</td>
-  <td align="center">32*</td>
-  <td align="center">58.4</td>
-  <td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_7b_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
-<tr>
-  <td align="left"><em>ViT-Adapter-7B + M2F</em></td>
-  <td align="center"><em>640×640</em></td>
-  <td align="center"><em>17*</em></td>
-  <td align="center"><em>58.4</em></td>
-  <td align="center"><em>-</em></td>
-</tr>
-</tbody></table>  
-
-*<sup><sup>2x</sup> Longer training schedule. \* FPS measured on NVIDIA B200.</sup>*  
-
-<table><tbody>
-<!-- START TABLE -->
-<!-- TABLE HEADER -->
-<th valign="bottom">Config</th>
-<th valign="bottom">Input size</th>
-<th valign="bottom">FPS</th>
-<th valign="bottom">PQ</th>
-<th valign="bottom">Download</th>
-<!-- TABLE BODY -->
-<!-- ROW: EoMT-L 1280x1280 -->
-<tr><td align="left"><a href="configs/coco/panoptic/eomt_large_1280.yaml">EoMT-L</a></td>
-<td align="center">1280×1280</td>
-<td align="center">30</td>
-<td align="center">58.3</td>
-<td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_large_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
-<!-- ROW: EoMT-g 1280x1280 -->
-<tr><td align="left"><a href="configs/coco/panoptic/eomt_giant_1280.yaml">EoMT-g</a></td>
-<td align="center">1280×1280</td>
-<td align="center">12</td>
-<td align="center">59.2</td>
-<td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_giant_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
-</tbody></table>
-
-#### ADE20K
-
-<table><tbody>
-<!-- START TABLE -->
-<!-- TABLE HEADER -->
-<th valign="bottom">Config</th>
-<th valign="bottom">Input size</th>
-<th valign="bottom">FPS</th>
-<th valign="bottom">PQ</th>
-<th valign="bottom">Download</th>
-<!-- TABLE BODY -->
-<!-- ROW: EoMT-L 640x640 -->
-<tr><td align="left"><a href="configs/ade20k/panoptic/eomt_large_640.yaml">EoMT-L</a></td>
-<td align="center">640×640</td>
-<td align="center">128</td>
-<td align="center">50.6<sup>C</sup></td>
-<td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_large_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
-<!-- ROW: EoMT-g 640x640 -->
-<tr><td align="left"><a href="configs/ade20k/panoptic/eomt_giant_640.yaml">EoMT-g</a></td>
-<td align="center">640×640</td>
-<td align="center">55</td>
-<td align="center">51.3<sup>C</sup></td>
-<td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_giant_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
-</tbody></table>
-
-<table><tbody>
-<!-- START TABLE -->
-<!-- TABLE HEADER -->
-<th valign="bottom">Config</th>
-<th valign="bottom">Input size</th>
-<th valign="bottom">FPS</th>
-<th valign="bottom">PQ</th>
-<th valign="bottom">Download</th>
-<!-- TABLE BODY -->
-<!-- ROW: EoMT-L 1280x1280 -->
-<tr><td align="left"><a href="configs/ade20k/panoptic/eomt_large_1280.yaml">EoMT-L</a></td>
-<td align="center">1280×1280</td>
-<td align="center">30</td>
-<td align="center">51.7<sup>C</sup></td>
-<td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_large_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
-<!-- ROW: EoMT-g 1280x1280 -->
-<tr><td align="left"><a href="configs/ade20k/panoptic/eomt_giant_1280.yaml">EoMT-g</a></td>
-<td align="center">1280×1280</td>
-<td align="center">12</td>
-<td align="center">52.8<sup>C</sup></td>
-<td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_giant_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
-</tbody></table>
-
-*<sub><sup>C</sup> Models pre-trained on COCO panoptic segmentation. See above for how to load a checkpoint.</sub>*
-
-### Semantic Segmentation
-
-#### Cityscapes
-
-<table><tbody>
-<!-- START TABLE -->
-<!-- TABLE HEADER -->
-<th valign="bottom">Config</th>
-<th valign="bottom">Input size</th>
-<th valign="bottom">FPS</th>
-<th valign="bottom">mIoU</th>
-<th valign="bottom">Download</th>
-<!-- TABLE BODY -->
-<!-- ROW: EoMT-L 1024x1024 -->
-<tr><td align="left"><a href="configs/cityscapes/semantic/eomt_large_1024.yaml">EoMT-L</a></td>
-<td align="center">1024×1024</td>
-<td align="center">25</td>
-<td align="center">84.2</td>
-<td align="center"><a href="https://huggingface.co/tue-mps/cityscapes_semantic_eomt_large_1024/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
-</tbody></table>
-
-#### ADE20K
-
-<table><tbody>
-<!-- START TABLE -->
-<!-- TABLE HEADER -->
-<th valign="bottom">Config</th>
-<th valign="bottom">Input size</th>
-<th valign="bottom">FPS</th>
-<th valign="bottom">mIoU</th>
-<th valign="bottom">Download</th>
-<!-- TABLE BODY -->
-<!-- ROW: EoMT-L 512x512 -->
-<tr><td align="left"><a href="configs/ade20k/semantic/eomt_large_512.yaml">EoMT-L</a></td>
-<td align="center">512×512</td>
-<td align="center">92</td>
-<td align="center">58.4</td>
-<td align="center"><a href="https://huggingface.co/tue-mps/ade20k_semantic_eomt_large_512/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
-</tbody></table>
-
-### Instance Segmentation
-
-#### COCO
-
-<table><tbody>
-<!-- START TABLE -->
-<!-- TABLE HEADER -->
-<th valign="bottom">Config</th>
-<th valign="bottom">Input size</th>
-<th valign="bottom">FPS</th>
-<th valign="bottom">mAP</th>
-<th valign="bottom">Download</th>
-<!-- TABLE BODY -->
-<!-- ROW: EoMT-L 640x640 -->
-<tr><td align="left"><a href="configs/coco/instance/eomt_large_640.yaml">EoMT-L</a></td>
-<td align="center">640×640</td>
-<td align="center">128</td>
-<td align="center">45.2*</td>
-<td align="center"><a href="https://huggingface.co/tue-mps/coco_instance_eomt_large_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
-</tbody></table>
-
-<table><tbody>
-<!-- START TABLE -->
-<!-- TABLE HEADER -->
-<th valign="bottom">Config</th>
-<th valign="bottom">Input size</th>
-<th valign="bottom">FPS</th>
-<th valign="bottom">mAP</th>
-<th valign="bottom">Download</th>
-<!-- TABLE BODY -->
-<!-- ROW: EoMT-L 1280x1280 -->
-<tr><td align="left"><a href="configs/coco/instance/eomt_large_1280.yaml">EoMT-L</a></td>
-<td align="center">1280×1280</td>
-<td align="center">30</td>
-<td align="center">48.8*</td>
-<td align="center"><a href="https://huggingface.co/tue-mps/coco_instance_eomt_large_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
-</tr>
-</tbody></table>
-
-*<sub>\* mAP reported using pycocotools; TorchMetrics (used by default) yields ~0.7 lower.</sub>*
+- **[DINOv2 Models](model_zoo/dinov2.md)** - Original published results and pre-trained weights.
+- **[DINOv3 Models](model_zoo/dinov3.md)** - New DINOv3-based models and pre-trained weights.
 
 ## Citation
 If you find this work useful in your research, please cite it using the BibTeX entry below:

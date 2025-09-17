@@ -32,6 +32,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from torch.nn.functional import interpolate
 from torchvision.transforms.v2.functional import pad
+import logging
 
 from training.two_stage_warmup_poly_schedule import TwoStageWarmupPolySchedule
 
@@ -50,10 +51,13 @@ class LightningModule(lightning.LightningModule):
         attn_mask_annealing_end_steps: Optional[list[int]],
         lr: float,
         llrd: float,
+        llrd_l2_enabled: bool,
+        lr_mult: float,
         weight_decay: float,
         poly_power: float,
         warmup_steps: tuple[int, int],
         ckpt_path=None,
+        delta_weights=False,
         load_ckpt_class_head=True,
     ):
         super().__init__()
@@ -66,46 +70,26 @@ class LightningModule(lightning.LightningModule):
         self.attn_mask_annealing_end_steps = attn_mask_annealing_end_steps
         self.lr = lr
         self.llrd = llrd
+        self.lr_mult = lr_mult
         self.weight_decay = weight_decay
         self.poly_power = poly_power
         self.warmup_steps = warmup_steps
+        self.llrd_l2_enabled = llrd_l2_enabled
 
         self.strict_loading = False
 
-        if ckpt_path:
-            ckpt = torch.load(ckpt_path, map_location=self.device, weights_only=True)
-
-            if "state_dict" in ckpt:
-                ckpt = ckpt["state_dict"]
-
-            ckpt = {k: v for k, v in ckpt.items() if "criterion.empty_weight" not in k}
-
-            if not load_ckpt_class_head:
-                ckpt = {
-                    k: v
-                    for k, v in ckpt.items()
-                    if "class_head" not in k and "class_predictor" not in k
-                }
-
+        if delta_weights and ckpt_path:
+            logging.info("Delta weights mode")
+            self._zero_init_outside_encoder()
+            current_state_dict = self.state_dict()
+            ckpt = self._load_ckpt(ckpt_path, load_ckpt_class_head)
+            combined_state_dict = self._add_state_dicts(current_state_dict, ckpt)
+            incompatible_keys = self.load_state_dict(combined_state_dict, strict=False)
+            self._raise_on_incompatible(incompatible_keys, load_ckpt_class_head)
+        elif ckpt_path:
+            ckpt = self._load_ckpt(ckpt_path, load_ckpt_class_head)
             incompatible_keys = self.load_state_dict(ckpt, strict=False)
-
-            if incompatible_keys.missing_keys:
-                if not load_ckpt_class_head:
-                    missing_keys = [
-                        key
-                        for key in incompatible_keys.missing_keys
-                        if "class_head" not in key and "class_predictor" not in key
-                    ]
-                else:
-                    missing_keys = incompatible_keys.missing_keys
-
-                if missing_keys:
-                    raise ValueError(f"Missing keys: {missing_keys}")
-
-            if incompatible_keys.unexpected_keys:
-                raise ValueError(
-                    f"Unexpected keys: {incompatible_keys.unexpected_keys}"
-                )
+            self._raise_on_incompatible(incompatible_keys, load_ckpt_class_head)
 
         self.log = torch.compiler.disable(self.log)  # type: ignore
 
@@ -118,17 +102,34 @@ class LightningModule(lightning.LightningModule):
         backbone_blocks = len(self.network.encoder.backbone.blocks)
         block_i = backbone_blocks
 
+        l2_blocks = torch.arange(
+            backbone_blocks - self.network.num_blocks, backbone_blocks
+        ).tolist()
+
         for name, param in reversed(list(self.named_parameters())):
             lr = self.lr
+
             if name.replace("network.encoder.backbone.", "") in encoder_param_names:
                 name_list = name.split(".")
+
                 is_block = False
                 for i, key in enumerate(name_list):
                     if key == "blocks":
                         block_i = int(name_list[i + 1])
                         is_block = True
+
                 if is_block or block_i == 0:
                     lr *= self.llrd ** (backbone_blocks - 1 - block_i)
+                    
+                elif (is_block or block_i == 0) and self.lr_mult != 1.0:
+                    lr *= self.lr_mult
+
+                if "backbone.norm" in name:
+                    lr = self.lr
+
+                if is_block and (block_i in l2_blocks) and ((not self.llrd_l2_enabled) or (self.lr_mult != 1.0)):
+                    lr = self.lr
+
                 backbone_param_groups.append(
                     {"params": [param], "lr": lr, "name": name}
                 )
@@ -501,24 +502,24 @@ class LightningModule(lightning.LightningModule):
     def _on_eval_end_semantic(self, log_prefix):
         if not self.trainer.sanity_checking:
             rank_zero_info(
-                f"{bold_green}mIoU: {self.trainer.callback_metrics[f'metrics/{log_prefix}_iou_all'] * 100:.1f}{reset}"
+                f"{bold_green}mIoU: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_iou_all'] * 100:.1f}{reset}"
             )
 
     def _on_eval_end_instance(self, log_prefix):
         if not self.trainer.sanity_checking:
             rank_zero_info(
-                f"{bold_green}mAP All: {self.trainer.callback_metrics[f'metrics/{log_prefix}_ap_all'] * 100:.1f} | "
-                f"mAP Small: {self.trainer.callback_metrics[f'metrics/{log_prefix}_ap_small_all'] * 100:.1f} | "
-                f"mAP Medium: {self.trainer.callback_metrics[f'metrics/{log_prefix}_ap_medium_all'] * 100:.1f} | "
-                f"mAP Large: {self.trainer.callback_metrics[f'metrics/{log_prefix}_ap_large_all'] * 100:.1f}{reset}"
+                f"{bold_green}mAP All: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_ap_all'] * 100:.1f} | "
+                f"mAP Small: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_ap_small_all'] * 100:.1f} | "
+                f"mAP Medium: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_ap_medium_all'] * 100:.1f} | "
+                f"mAP Large: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_ap_large_all'] * 100:.1f}{reset}"
             )
 
     def _on_eval_end_panoptic(self, log_prefix):
         if not self.trainer.sanity_checking:
             rank_zero_info(
-                f"{bold_green}PQ All: {self.trainer.callback_metrics[f'metrics/{log_prefix}_pq_all'] * 100:.1f} | "
-                f"PQ Things: {self.trainer.callback_metrics[f'metrics/{log_prefix}_pq_things'] * 100:.1f} | "
-                f"PQ Stuff: {self.trainer.callback_metrics[f'metrics/{log_prefix}_pq_stuff'] * 100:.1f}{reset}"
+                f"{bold_green}PQ All: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_pq_all'] * 100:.1f} | "
+                f"PQ Things: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_pq_things'] * 100:.1f} | "
+                f"PQ Stuff: {self.trainer.callback_metrics[f'Metrics/{log_prefix}_pq_stuff'] * 100:.1f}{reset}"
             )
 
     @torch.compiler.disable
@@ -830,3 +831,60 @@ class LightningModule(lightning.LightningModule):
         checkpoint["state_dict"] = {
             k.replace("._orig_mod", ""): v for k, v in checkpoint["state_dict"].items()
         }
+
+    def _zero_init_outside_encoder(self, encoder_prefix="network.encoder."):
+        with torch.no_grad():
+            total, zeroed = 0, 0
+            for name, p in self.named_parameters():
+                total += p.numel()
+                if not name.startswith(encoder_prefix):
+                    p.zero_()
+                    zeroed += p.numel()
+            logging.info(
+                f"Zeroed {zeroed:,} / {total:,} parameters (everything not under '{encoder_prefix}')"
+            )
+
+    def _add_state_dicts(self, state_dict1, state_dict2):
+        summed = {}
+        for k in state_dict1.keys():
+            if k not in state_dict2:
+                raise KeyError(f"Key {k} not found in second state_dict")
+
+            if state_dict1[k].shape != state_dict2[k].shape:
+                raise ValueError(
+                    f"Shape mismatch at {k}: "
+                    f"{state_dict1[k].shape} vs {state_dict2[k].shape}"
+                )
+
+            summed[k] = state_dict1[k] + state_dict2[k]
+
+        return summed
+
+    def _load_ckpt(self, ckpt_path, load_ckpt_class_head):
+        ckpt = torch.load(ckpt_path, map_location=self.device, weights_only=True)
+        if "state_dict" in ckpt:
+            ckpt = ckpt["state_dict"]
+        ckpt = {k: v for k, v in ckpt.items() if "criterion.empty_weight" not in k}
+        if not load_ckpt_class_head:
+            ckpt = {
+                k: v
+                for k, v in ckpt.items()
+                if "class_head" not in k and "class_predictor" not in k
+            }
+        logging.info(f"Loaded {len(ckpt)} keys")
+        return ckpt
+
+    def _raise_on_incompatible(self, incompatible_keys, load_ckpt_class_head):
+        if incompatible_keys.missing_keys:
+            if not load_ckpt_class_head:
+                missing_keys = [
+                    key
+                    for key in incompatible_keys.missing_keys
+                    if "class_head" not in key and "class_predictor" not in key
+                ]
+            else:
+                missing_keys = incompatible_keys.missing_keys
+            if missing_keys:
+                raise ValueError(f"Missing keys: {missing_keys}")
+        if incompatible_keys.unexpected_keys:
+            raise ValueError(f"Unexpected keys: {incompatible_keys.unexpected_keys}")

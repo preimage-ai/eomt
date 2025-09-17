@@ -44,5 +44,7 @@ class TwoStageWarmupPolySchedule(LRScheduler):
                     adjusted = max(0, step - non_vit_warmup - vit_warmup)
                     max_steps = max(1, self.total_steps - non_vit_warmup - vit_warmup)
                     lr = base_lr * (1 - (adjusted / max_steps)) ** self.poly_power
+            
             lrs.append(lr)
         return lrs
+    
