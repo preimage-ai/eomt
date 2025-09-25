@@ -16,42 +16,42 @@
 <th valign="bottom">Download</th>
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-S 640x640 -->
-<!-- <tr><td align="left"><a href="configs/coco/panoptic/eomt_small_640_1x.yaml">EoMT-S</a></td>
+<!-- <tr><td align="left"><a href="../configs/coco/panoptic/eomt_small_640_1x.yaml">EoMT-S</a></td>
 <td align="center">640×640</td>
 <td align="center">330</td>
 <td align="center">44.7</td>
 <td align="center">-</td>
 </tr> -->
 <!-- ROW: EoMT-S 640x640 -->
-<tr><td align="left"><a href="configs/dinov2/coco/panoptic/eomt_small_640_2x.yaml">EoMT-S</a><sup>2x</sup></td>
+<tr><td align="left"><a href="../configs/dinov2/coco/panoptic/eomt_small_640_2x.yaml">EoMT-S</a><sup>2x</sup></td>
 <td align="center">640×640</td>
 <td align="center">330</td>
 <td align="center">46.7</td>
 <td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_small_640_2x/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-B 640x640 -->
-<!-- <tr><td align="left"><a href="configs/coco/panoptic/eomt_base_640_1x.yaml">EoMT-B</a></td>
+<!-- <tr><td align="left"><a href="../configs/coco/panoptic/eomt_base_640_1x.yaml">EoMT-B</a></td>
 <td align="center">640×640</td>
 <td align="center">261</td>
 <td align="center">50.6</td>
 <td align="center">-</td>
 </tr> -->
 <!-- ROW: EoMT-B 640x640 -->
-<tr><td align="left"><a href="configs/dinov2/coco/panoptic/eomt_base_640_2x.yaml">EoMT-B</a><sup>2x</sup></td>
+<tr><td align="left"><a href="../configs/dinov2/coco/panoptic/eomt_base_640_2x.yaml">EoMT-B</a><sup>2x</sup></td>
 <td align="center">640×640</td>
 <td align="center">261</td>
 <td align="center">51.6</td>
 <td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_base_640_2x/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-L 640x640 -->
-<tr><td align="left"><a href="configs/dinov2/coco/panoptic/eomt_large_640.yaml">EoMT-L</a></td>
+<tr><td align="left"><a href="../configs/dinov2/coco/panoptic/eomt_large_640.yaml">EoMT-L</a></td>
 <td align="center">640×640</td>
 <td align="center">128</td>
 <td align="center">56.0</td>
 <td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_large_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-g 640x640 -->
-<tr><td align="left"><a href="configs/dinov2/coco/panoptic/eomt_giant_640.yaml">EoMT-g</a></td>
+<tr><td align="left"><a href="../configs/dinov2/coco/panoptic/eomt_giant_640.yaml">EoMT-g</a></td>
 <td align="center">640×640</td>
 <td align="center">55</td>
 <td align="center">57.0</td>
@@ -85,14 +85,14 @@
 <th valign="bottom">Download</th>
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 1280x1280 -->
-<tr><td align="left"><a href="configs/dinov2/coco/panoptic/eomt_large_1280.yaml">EoMT-L</a></td>
+<tr><td align="left"><a href="../configs/dinov2/coco/panoptic/eomt_large_1280.yaml">EoMT-L</a></td>
 <td align="center">1280×1280</td>
 <td align="center">30</td>
 <td align="center">58.3</td>
 <td align="center"><a href="https://huggingface.co/tue-mps/coco_panoptic_eomt_large_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-g 1280x1280 -->
-<tr><td align="left"><a href="configs/dinov2/coco/panoptic/eomt_giant_1280.yaml">EoMT-g</a></td>
+<tr><td align="left"><a href="../configs/dinov2/coco/panoptic/eomt_giant_1280.yaml">EoMT-g</a></td>
 <td align="center">1280×1280</td>
 <td align="center">12</td>
 <td align="center">59.2</td>
@@ -112,14 +112,14 @@
 <th valign="bottom">Download</th>
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 640x640 -->
-<tr><td align="left"><a href="configs/dinov2/ade20k/panoptic/eomt_large_640.yaml">EoMT-L</a></td>
+<tr><td align="left"><a href="../configs/dinov2/ade20k/panoptic/eomt_large_640.yaml">EoMT-L</a></td>
 <td align="center">640×640</td>
 <td align="center">128</td>
 <td align="center">50.6<sup>C</sup></td>
 <td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_large_640/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-g 640x640 -->
-<tr><td align="left"><a href="configs/dinov2/ade20k/panoptic/eomt_giant_640.yaml">EoMT-g</a></td>
+<tr><td align="left"><a href="../configs/dinov2/ade20k/panoptic/eomt_giant_640.yaml">EoMT-g</a></td>
 <td align="center">640×640</td>
 <td align="center">55</td>
 <td align="center">51.3<sup>C</sup></td>
@@ -137,14 +137,14 @@
 <th valign="bottom">Download</th>
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 1280x1280 -->
-<tr><td align="left"><a href="configs/dinov2/ade20k/panoptic/eomt_large_1280.yaml">EoMT-L</a></td>
+<tr><td align="left"><a href="../configs/dinov2/ade20k/panoptic/eomt_large_1280.yaml">EoMT-L</a></td>
 <td align="center">1280×1280</td>
 <td align="center">30</td>
 <td align="center">51.7<sup>C</sup></td>
 <td align="center"><a href="https://huggingface.co/tue-mps/ade20k_panoptic_eomt_large_1280/resolve/main/pytorch_model.bin">Model Weights</a></td>
 </tr>
 <!-- ROW: EoMT-g 1280x1280 -->
-<tr><td align="left"><a href="configs/dinov2/ade20k/panoptic/eomt_giant_1280.yaml">EoMT-g</a></td>
+<tr><td align="left"><a href="../configs/dinov2/ade20k/panoptic/eomt_giant_1280.yaml">EoMT-g</a></td>
 <td align="center">1280×1280</td>
 <td align="center">12</td>
 <td align="center">52.8<sup>C</sup></td>
@@ -168,7 +168,7 @@
 <th valign="bottom">Download</th>
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 1024x1024 -->
-<tr><td align="left"><a href="configs/dinov2/cityscapes/semantic/eomt_large_1024.yaml">EoMT-L</a></td>
+<tr><td align="left"><a href="../configs/dinov2/cityscapes/semantic/eomt_large_1024.yaml">EoMT-L</a></td>
 <td align="center">1024×1024</td>
 <td align="center">25</td>
 <td align="center">84.2</td>
@@ -188,7 +188,7 @@
 <th valign="bottom">Download</th>
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 512x512 -->
-<tr><td align="left"><a href="configs/dinov2/ade20k/semantic/eomt_large_512.yaml">EoMT-L</a></td>
+<tr><td align="left"><a href="../configs/dinov2/ade20k/semantic/eomt_large_512.yaml">EoMT-L</a></td>
 <td align="center">512×512</td>
 <td align="center">92</td>
 <td align="center">58.4</td>
@@ -210,7 +210,7 @@
 <th valign="bottom">Download</th>
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 640x640 -->
-<tr><td align="left"><a href="configs/dinov2/coco/instance/eomt_large_640.yaml">EoMT-L</a></td>
+<tr><td align="left"><a href="../configs/dinov2/coco/instance/eomt_large_640.yaml">EoMT-L</a></td>
 <td align="center">640×640</td>
 <td align="center">128</td>
 <td align="center">45.2*</td>
@@ -228,7 +228,7 @@
 <th valign="bottom">Download</th>
 <!-- TABLE BODY -->
 <!-- ROW: EoMT-L 1280x1280 -->
-<tr><td align="left"><a href="configs/dinov2/coco/instance/eomt_large_1280.yaml">EoMT-L</a></td>
+<tr><td align="left"><a href="../configs/dinov2/coco/instance/eomt_large_1280.yaml">EoMT-L</a></td>
 <td align="center">1280×1280</td>
 <td align="center">30</td>
 <td align="center">48.8*</td>
