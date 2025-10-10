@@ -24,6 +24,8 @@ class MaskClassificationPanoptic(LightningModule):
         attn_mask_annealing_end_steps: Optional[list[int]] = None,
         lr: float = 1e-4,
         llrd: float = 0.8,
+        llrd_l2_enabled: bool = True,
+        lr_mult: float = 1.0,
         weight_decay: float = 0.05,
         num_points: int = 12544,
         oversample_ratio: float = 3.0,
@@ -37,6 +39,7 @@ class MaskClassificationPanoptic(LightningModule):
         mask_thresh: float = 0.8,
         overlap_thresh: float = 0.8,
         ckpt_path: Optional[str] = None,
+        delta_weights: bool = False,
         load_ckpt_class_head: bool = True,
     ):
         super().__init__(
@@ -48,10 +51,13 @@ class MaskClassificationPanoptic(LightningModule):
             attn_mask_annealing_end_steps=attn_mask_annealing_end_steps,
             lr=lr,
             llrd=llrd,
+            llrd_l2_enabled=llrd_l2_enabled,
+            lr_mult=lr_mult,
             weight_decay=weight_decay,
             poly_power=poly_power,
             warmup_steps=warmup_steps,
             ckpt_path=ckpt_path,
+            delta_weights=delta_weights,
             load_ckpt_class_head=load_ckpt_class_head,
         )
 
@@ -74,7 +80,9 @@ class MaskClassificationPanoptic(LightningModule):
 
         thing_classes = [i for i in range(num_classes) if i not in stuff_classes]
         self.init_metrics_panoptic(
-            thing_classes, stuff_classes, self.network.num_blocks + 1 if self.network.masked_attn_enabled else 1
+            thing_classes,
+            stuff_classes,
+            self.network.num_blocks + 1 if self.network.masked_attn_enabled else 1,
         )
 
     def eval_step(
