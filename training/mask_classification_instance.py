@@ -27,6 +27,8 @@ class MaskClassificationInstance(LightningModule):
         attn_mask_annealing_end_steps: Optional[list[int]] = None,
         lr: float = 1e-4,
         llrd: float = 0.8,
+        llrd_l2_enabled: bool = True,
+        lr_mult: float = 1.0,
         weight_decay: float = 0.05,
         num_points: int = 12544,
         oversample_ratio: float = 3.0,
@@ -41,6 +43,7 @@ class MaskClassificationInstance(LightningModule):
         overlap_thresh: float = 0.8,
         eval_top_k_instances: int = 100,
         ckpt_path: Optional[str] = None,
+        delta_weights: bool = False,
         load_ckpt_class_head: bool = True,
     ):
         super().__init__(
@@ -52,10 +55,13 @@ class MaskClassificationInstance(LightningModule):
             attn_mask_annealing_end_steps=attn_mask_annealing_end_steps,
             lr=lr,
             llrd=llrd,
+            llrd_l2_enabled=llrd_l2_enabled,
+            lr_mult=lr_mult,
             weight_decay=weight_decay,
             poly_power=poly_power,
             warmup_steps=warmup_steps,
             ckpt_path=ckpt_path,
+            delta_weights=delta_weights,
             load_ckpt_class_head=load_ckpt_class_head,
         )
 
