@@ -1,17 +1,17 @@
 trainer:
-  max_epochs: 16
-  logger:
-    class_path: lightning.pytorch.loggers.wandb.WandbLogger
-    init_args:
-      resume: allow
-      project: "eomt"
-      name: "ade20k_semantic_eomt_large_512_dinov3"
+  max_epochs: 24
+  # logger:
+  #   class_path: lightning.pytorch.loggers.wandb.WandbLogger
+  #   init_args:
+  #     resume: allow
+  #     project: "eomt"
+  #     name: "ade20k_semantic_eomt_large_512_dinov3"
 model:
   class_path: training.mask_classification_semantic.MaskClassificationSemantic
   init_args:
     attn_mask_annealing_enabled: True
-    attn_mask_annealing_start_steps: [0, 6520, 9780, 13040]
-    attn_mask_annealing_end_steps: [3000, 9780, 13040, 16300]
+    attn_mask_annealing_start_steps: [0, 6520, 12000, 18000]
+    attn_mask_annealing_end_steps: [3000, 12000, 18000, 22000]
     lr: 2e-4
     lr_mult: 0.1
     llrd: 1.0

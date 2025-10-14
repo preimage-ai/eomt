@@ -3,6 +3,7 @@
 _site/
 lightning_logs/
 wandb/
+eomt/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
