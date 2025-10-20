@@ -80,8 +80,14 @@ class LightningModule(lightning.LightningModule):
 
         if delta_weights and ckpt_path:
             logging.info("Delta weights mode")
-            self._zero_init_outside_encoder()
-            current_state_dict = self.state_dict()
+            self._zero_init_outside_encoder(skip_class_head=not load_ckpt_class_head)
+            current_state_dict = {k: v.cpu() for k, v in self.state_dict().items()}
+            if not load_ckpt_class_head:
+                current_state_dict = {
+                    k: v
+                    for k, v in current_state_dict.items()
+                    if "class_head" not in k and "class_predictor" not in k
+                }
             ckpt = self._load_ckpt(ckpt_path, load_ckpt_class_head)
             combined_state_dict = self._add_state_dicts(current_state_dict, ckpt)
             incompatible_keys = self.load_state_dict(combined_state_dict, strict=False)
@@ -120,14 +126,18 @@ class LightningModule(lightning.LightningModule):
 
                 if is_block or block_i == 0:
                     lr *= self.llrd ** (backbone_blocks - 1 - block_i)
-                    
+
                 elif (is_block or block_i == 0) and self.lr_mult != 1.0:
                     lr *= self.lr_mult
 
                 if "backbone.norm" in name:
                     lr = self.lr
 
-                if is_block and (block_i in l2_blocks) and ((not self.llrd_l2_enabled) or (self.lr_mult != 1.0)):
+                if (
+                    is_block
+                    and (block_i in l2_blocks)
+                    and ((not self.llrd_l2_enabled) or (self.lr_mult != 1.0))
+                ):
                     lr = self.lr
 
                 backbone_param_groups.append(
@@ -832,17 +842,25 @@ class LightningModule(lightning.LightningModule):
             k.replace("._orig_mod", ""): v for k, v in checkpoint["state_dict"].items()
         }
 
-    def _zero_init_outside_encoder(self, encoder_prefix="network.encoder."):
+    def _zero_init_outside_encoder(
+        self, encoder_prefix="network.encoder.", skip_class_head=False
+    ):
         with torch.no_grad():
             total, zeroed = 0, 0
             for name, p in self.named_parameters():
                 total += p.numel()
                 if not name.startswith(encoder_prefix):
+                    if skip_class_head and (
+                        "class_head" in name or "class_predictor" in name
+                    ):
+                        continue
                     p.zero_()
                     zeroed += p.numel()
-            logging.info(
-                f"Zeroed {zeroed:,} / {total:,} parameters (everything not under '{encoder_prefix}')"
-            )
+            msg = f"Zeroed {zeroed:,} / {total:,} parameters (everything not under '{encoder_prefix}'"
+            if skip_class_head:
+                msg += ", skipping class head"
+            msg += ")"
+            logging.info(msg)
 
     def _add_state_dicts(self, state_dict1, state_dict2):
         summed = {}
@@ -861,7 +879,7 @@ class LightningModule(lightning.LightningModule):
         return summed
 
     def _load_ckpt(self, ckpt_path, load_ckpt_class_head):
-        ckpt = torch.load(ckpt_path, map_location=self.device, weights_only=True)
+        ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=True)
         if "state_dict" in ckpt:
             ckpt = ckpt["state_dict"]
         ckpt = {k: v for k, v in ckpt.items() if "criterion.empty_weight" not in k}
