@@ -143,7 +143,7 @@ This command evaluates the same `EoMT-L` model using 4 GPUs with a batch size of
 🔧 Replace `/path/to/dataset` with the directory containing the dataset zip files.  
 🔧 Replace `/path/to/pytorch_model.bin` with the path to the checkpoint to evaluate.
 
-A [notebook](inference.ipynb) is available for quick inference and visualization with auto-downloaded DINOv2 pre-trained models.
+A [notebook](inference.ipynb) is available for quick inference and visualization with auto-downloaded pre-trained models.
 
 > **DINOv3 Models**: When using DINOv3-based configurations, the code expects delta weights relative to DINOv3 weights by default. To disable this behavior and use absolute weights instead, add `--model.delta_weights False`. 
 
