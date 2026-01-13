@@ -58,78 +58,22 @@ class MaskClassificationLoss(Mask2FormerLoss):
         targets: List[dict],
         class_queries_logits: Optional[torch.Tensor] = None,
     ):
-        """
-        Normalize target masks to shape [num_instances, H, W] (no channel dim),
-        ensure dtype/device match with masks_queries_logits, and then call the
-        Mask2Former matcher. Add diagnostics on failure.
-        """
+        mask_labels = [
+            target["masks"].to(masks_queries_logits.dtype) for target in targets
+        ]
+        class_labels = [target["labels"].long() for target in targets]
 
-        def _normalize_mask_tensor(mask: torch.Tensor) -> torch.Tensor:
-            # Acceptable input shapes (per-target):
-            #   [num_instances, 1, H, W]  -> squeeze -> [num_instances, H, W]
-            #   [num_instances, H, W]     -> keep as-is
-            # Defensive: if mask is single-instance [1, H, W] or [H, W], handle too.
-            if not isinstance(mask, torch.Tensor):
-                mask = torch.as_tensor(mask)
-
-            # Move channel dim if present at pos 1 and equals 1
-            if mask.ndim == 4 and mask.shape[1] == 1:
-                mask = mask.squeeze(1)  # [N, 1, H, W] -> [N, H, W]
-            # If someone produced [1, H, W] (single instance without batch dim)
-            if mask.ndim == 3 and mask.shape[0] == 1:
-                mask = mask.squeeze(0)  # [1, H, W] -> [H, W]
-                # bring back to [N, H, W] with N=1 for consistency
-                mask = mask.unsqueeze(0)
-
-            # Final sanity: we expect mask to be [num_instances, H, W]
-            if mask.ndim != 3:
-                raise ValueError(
-                    f"Unexpected mask ndim {mask.ndim}; expected 3 (num_instances, H, W)."
-                )
-            return mask
-
-        # normalize mask tensors and ensure dtype/device compatibility
-        mask_labels = []
-        for i, target in enumerate(targets):
-            if "masks" not in target:
-                raise KeyError(f"target[{i}] is missing 'masks' key")
-
-            mask_t = _normalize_mask_tensor(target["masks"])
-
-            # ensure dtype/device consistent with model logits (float for sampling computations)
-            mask_t = mask_t.to(dtype=masks_queries_logits.dtype, device=masks_queries_logits.device)
-            mask_labels.append(mask_t)
-
-        # class labels (long on correct device)
-        class_labels = [target["labels"].long().to(masks_queries_logits.device) for target in targets]
-
-        # call matcher with diagnostics on failure
-        try:
-            indices = self.matcher(
-                masks_queries_logits=masks_queries_logits,
-                mask_labels=mask_labels,
-                class_queries_logits=class_queries_logits,
-                class_labels=class_labels,
-            )
-        except RuntimeError as e:
-            # Print shapes that are most likely relevant to the grid_sample error
-            print("\n🔥 Mask2Former Matcher failed.")
-            print("  masks_queries_logits:", getattr(masks_queries_logits, "shape", None))
-            if class_queries_logits is not None:
-                print("  class_queries_logits:", getattr(class_queries_logits, "shape", None))
-            for i, (m, t) in enumerate(zip(mask_labels, targets)):
-                print(f"  normalized target[{i}] mask shape: {m.shape}, dtype: {m.dtype}, device: {m.device}")
-                if "labels" in t:
-                    print(f"    target[{i}] labels shape: {t['labels'].shape}, dtype: {t['labels'].dtype}")
-            # re-raise so you still get the full original traceback
-            raise
+        indices = self.matcher(
+            masks_queries_logits=masks_queries_logits,
+            mask_labels=mask_labels,
+            class_queries_logits=class_queries_logits,
+            class_labels=class_labels,
+        )
 
         loss_masks = self.loss_masks(masks_queries_logits, mask_labels, indices)
         loss_classes = self.loss_labels(class_queries_logits, class_labels, indices)
 
         return {**loss_masks, **loss_classes}
-
-
 
     def loss_masks(self, masks_queries_logits, mask_labels, indices):
         loss_masks = super().loss_masks(masks_queries_logits, mask_labels, indices, 1)

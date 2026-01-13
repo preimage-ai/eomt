@@ -25,6 +25,8 @@ from torchmetrics.functional.detection._panoptic_quality_common import (
 )
 import wandb
 from PIL import Image
+import matplotlib
+matplotlib.use('Agg')   
 import matplotlib.colors as mcolors
 from matplotlib.lines import Line2D
 import io
@@ -32,9 +34,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from torch.nn.functional import interpolate
 from torchvision.transforms.v2.functional import pad
+import os
+from huggingface_hub import login
 import logging
 
 from training.two_stage_warmup_poly_schedule import TwoStageWarmupPolySchedule
+
+# login(token=os.environ.get("HUGGINGFACE_HUB_TOKEN"))
 
 bold_green = "\033[1;32m"
 reset = "\033[0m"
@@ -676,20 +682,29 @@ class LightningModule(lightning.LightningModule):
 
     @staticmethod
     @torch.compiler.disable
-    def to_per_pixel_targets_semantic(
-        targets: list[dict],
-        ignore_idx,
-    ):
+    def to_per_pixel_targets_semantic(targets: list[dict], ignore_idx):
         per_pixel_targets = []
         for target in targets:
+            H, W = target["masks"].shape[-2:]
             per_pixel_target = torch.full(
-                target["masks"].shape[-2:],
+                (H, W),
                 ignore_idx,
                 dtype=target["labels"].dtype,
                 device=target["labels"].device,
             )
 
             for i, mask in enumerate(target["masks"]):
+                # ensure mask is 2D (H, W)
+                if mask.ndim > 2:
+                    mask = mask.squeeze(0)  # removes singleton dim if [1,H,W]
+                mask = mask.bool()  # ensure boolean for indexing
+
+                # optional sanity check
+                if mask.shape != per_pixel_target.shape:
+                    raise ValueError(
+                        f"Mask shape {mask.shape} doesn't match target size {per_pixel_target.shape}"
+                    )
+
                 per_pixel_target[mask] = target["labels"][i]
 
             per_pixel_targets.append(per_pixel_target)

@@ -15,7 +15,7 @@ from datasets.lightning_data_module import LightningDataModule
 from datasets.dataset import Dataset
 from datasets.transforms import Transforms
 
-CLASS_MAPPING = {i: i - 1 for i in range(1, 151)}
+CLASS_MAPPING = {i: i - 1 for i in range(1, 166)}
 INSTANCE_MAPPING = {
     0: 7,
     1: 8,
@@ -128,7 +128,7 @@ class ADE20KPanoptic(LightningDataModule):
         num_workers: int = 4,
         batch_size: int = 16,
         img_size: tuple[int, int] = (640, 640),
-        num_classes: int = 150,
+        num_classes: int = 165,
         color_jitter_enabled=True,
         scale_range=(0.1, 2.0),
         check_empty_targets=True,

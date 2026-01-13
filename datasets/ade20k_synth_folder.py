@@ -27,8 +27,8 @@ from PIL import Image
 from datasets.lightning_data_module import LightningDataModule
 from datasets.transforms import Transforms
 
-# Map ADE20K semantic ids (1..150) -> 0-based indices (0..149)
-CLASS_MAPPING = {i: i - 1 for i in range(1, 151)}
+# Map ADE20K semantic ids (1..165) -> 0-based indices (0..164)
+CLASS_MAPPING = {i: i - 1 for i in range(1, 166)}
 
 
 def default_target_parser(
@@ -89,6 +89,8 @@ class _FolderDataset(torch.utils.data.Dataset):
         check_empty_targets: bool = True,
     ) -> None:
         super().__init__()
+        images_dir = "images_resampled"
+        masks_dir = "annotations_filtered_resampled"
         self.root = Path(root)
         self.images_dir = self.root / images_dir
         self.masks_dir = self.root / masks_dir
@@ -98,29 +100,41 @@ class _FolderDataset(torch.utils.data.Dataset):
         self.target_parser = target_parser
         self.check_empty_targets = check_empty_targets
 
+        print(f"Images directory found")
+
         if not self.images_dir.is_dir():
             raise FileNotFoundError(f"Images directory not found: {self.images_dir}")
         if not self.masks_dir.is_dir():
             raise FileNotFoundError(f"Masks directory not found: {self.masks_dir}")
 
-        # Build file pairs by exact same filename (stem + suffix) present in both dirs
         images = sorted(self.images_dir.glob(f"*{self.img_suffix}"))
         candidates: list[_Item] = []
-        for img_path in images:
+        skipped_corrupt, skipped_empty = 0, 0
+
+        for i, img_path in enumerate(images):
             mask_path = self.masks_dir / img_path.name.replace(self.img_suffix, self.mask_suffix)
             if not mask_path.exists():
                 continue
 
-            if self.check_empty_targets:
-                # Skip pure-background masks (min==max==0)
-                with Image.open(mask_path) as m:
-                    extrema = m.getextrema()
-                    if (
-                        isinstance(extrema, tuple)
-                        and len(extrema) == 2
-                        and extrema[0] == extrema[1] == 0
-                    ):
-                        continue
+            try:
+                if self.check_empty_targets:
+                    # Skip pure-background masks (min==max==0)
+                    with Image.open(mask_path) as m:
+                        extrema = m.getextrema()
+                        if (
+                            isinstance(extrema, tuple)
+                            and len(extrema) == 2
+                            and extrema[0] == extrema[1] == 0
+                        ):
+                            skipped_empty += 1
+                            continue
+            except (OSError, Image.UnidentifiedImageError) as e:
+                print(f"⚠️ Skipping corrupt or unreadable mask: {mask_path} ({e})")
+                skipped_corrupt += 1
+                continue
+
+            if i % 100 == 0:
+                print(f"iteration {i}: {len(candidates)} valid pairs so far")
 
             candidates.append(_Item(img_path=img_path, mask_path=mask_path))
 
@@ -132,19 +146,34 @@ class _FolderDataset(torch.utils.data.Dataset):
                 f"(Looked for *{self.img_suffix} with matching *{self.mask_suffix})"
             )
 
+        print(
+            f"\n✅ Dataset ready — {len(candidates)} valid pairs "
+            f"(skipped {skipped_empty} empty, {skipped_corrupt} corrupt)"
+        )
+
         self._items = candidates
+
 
     def __len__(self) -> int:
         return len(self._items)
 
+
     def __getitem__(self, index: int):
         item = self._items[index]
 
-        # Load image (RGB)
-        img = tv_tensors.Image(Image.open(item.img_path).convert("RGB"))
+        try:
+            # Load image (RGB)
+            img = tv_tensors.Image(Image.open(item.img_path).convert("RGB"))
+        except (OSError, Image.UnidentifiedImageError) as e:
+            print(f"⚠️ Could not open image: {item.img_path} ({e}) — skipping sample.")
+            return self.__getitem__((index + 1) % len(self._items))
 
-        # Load mask as integer label map (L)
-        mask = tv_tensors.Mask(Image.open(item.mask_path).convert("L"))
+        try:
+            # Load mask as integer label map (L)
+            mask = tv_tensors.Mask(Image.open(item.mask_path).convert("L"))
+        except (OSError, Image.UnidentifiedImageError) as e:
+            print(f"⚠️ Could not open mask: {item.mask_path} ({e}) — skipping sample.")
+            return self.__getitem__((index + 1) % len(self._items))
 
         # Ensure same spatial size (use NEAREST for masks)
         img_size = F.get_size(img)  # (H, W)
@@ -155,7 +184,7 @@ class _FolderDataset(torch.utils.data.Dataset):
         masks, labels, is_crowd = self.target_parser(mask)
 
         if len(masks) == 0:
-            # If a sample ends up empty after any transforms (rare), attempt a fallback.
+            # Fallback: if empty after transforms
             t = mask.to(dtype=torch.int64)
             present = [cid for cid in torch.unique(t).tolist() if cid in CLASS_MAPPING]
             if not present:
@@ -176,6 +205,8 @@ class _FolderDataset(torch.utils.data.Dataset):
 
         return img, target
 
+    
+
 
 class ADE20KSynthSemantic(LightningDataModule):
     """
@@ -191,7 +222,7 @@ class ADE20KSynthSemantic(LightningDataModule):
         num_workers: int = 4,
         batch_size: int = 8,
         img_size: tuple[int, int] = (512, 512),
-        num_classes: int = 150,
+        num_classes: int = 165,
         color_jitter_enabled: bool = True,
         scale_range: tuple[float, float] = (0.5, 2.0),
         check_empty_targets: bool = True,
@@ -232,12 +263,16 @@ class ADE20KSynthSemantic(LightningDataModule):
         self._train_ds = None
         self._val_ds = None
 
+        
+
     @staticmethod
     def target_parser(target: tv_tensors.Mask, **kwargs):
+       
         # Wrap the default parser (kept static to mirror your style)
         return default_target_parser(target)
 
     def _make_full_dataset(self, with_transforms: bool) -> _FolderDataset:
+        
         return _FolderDataset(
             root=Path(self.path),
             images_dir=self.images_dir,
@@ -250,6 +285,7 @@ class ADE20KSynthSemantic(LightningDataModule):
         )
 
     def setup(self, stage: Optional[str] = None) -> "ADE20KSynthSemantic":
+        
         # Build once then split deterministically
         full_ds = self._make_full_dataset(with_transforms=True)   # train (aug)
         n = len(full_ds)
@@ -271,6 +307,7 @@ class ADE20KSynthSemantic(LightningDataModule):
 
     # Dataloaders use LightningDataModule's collates/kwargs
     def train_dataloader(self) -> DataLoader:
+        
         return DataLoader(
             self._train_ds,
             shuffle=True,
@@ -280,6 +317,7 @@ class ADE20KSynthSemantic(LightningDataModule):
         )
 
     def val_dataloader(self) -> DataLoader:
+        
         return DataLoader(
             self._val_ds,
             shuffle=False,

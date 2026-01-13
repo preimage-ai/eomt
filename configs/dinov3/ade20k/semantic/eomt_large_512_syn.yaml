@@ -1,16 +1,14 @@
 trainer:
-  max_epochs: 50
+  max_epochs: 16
   logger:
     class_path: lightning.pytorch.loggers.wandb.WandbLogger
     init_args:
       resume: allow
-      project: "eomt1"
+      project: "eomt"
       name: "ade20k_semantic_eomt_large_512_dinov3"
 model:
   class_path: training.mask_classification_semantic.MaskClassificationSemantic
   init_args:
-    # class_weights_path: "rooftop_class_weights.json"
-    num_classes: 165
     attn_mask_annealing_enabled: True
     attn_mask_annealing_start_steps: [0, 6520, 9780, 13040]
     attn_mask_annealing_end_steps: [3000, 9780, 13040, 16300]
@@ -27,10 +25,31 @@ model:
           class_path: models.vit.ViT
           init_args:
             backbone_name: facebook/dinov3-vitl16-pretrain-lvd1689m
+# Data configuration  
 data:
-  class_path: datasets.ade20k_semantic.ADE20KSemantic
+  class_path: datasets.ade20k_stratified_cycle.UnifiedADE20KDataModule
   init_args:
-    batch_size: 16
+    path: /home/paladin/Workspace/jd-dainty/qwen-image-edit/images_train
+    csv_path: /home/shifu/workspace/varun/EoMT/eomt/multi_source_.csv
+    batch_size: 8
     num_workers: 4
     img_size: [512, 512]
-    num_classes: 165
+    num_classes: 197
+    val_ratio: 0.1
+    img_suffix: _edited.png
+    mask_suffix: _mask.png
+
+# Optimizer configuration (root level)
+optimizer:
+  class_path: torch.optim.AdamW
+  init_args:
+    lr: 0.0001
+    weight_decay: 0.05
+    betas: [0.9, 0.999]
+
+# Scheduler configuration (root level)
+lr_scheduler:
+  class_path: torch.optim.lr_scheduler.PolynomialLR
+  init_args:
+    total_iters: 50  # Should match max_epochs
+    power: 0.9

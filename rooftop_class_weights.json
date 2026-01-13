@@ -1,0 +1,94 @@
+{
+  "_comment": "Minimal class weights for rooftop segmentation with sample-aware loss",
+  "_mapping": "Keys are 0-indexed class IDs: class_id = pixel_id - 1",
+  
+  "rooftop_only_class_ids": [
+    150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164
+  ],
+  "_rooftop_only_comment": "Classes 150-164 are NEW rooftop-specific classes NOT in original ADE20K (which has 0-149). Loss for these classes is masked (weight=0) when training on ADE20K samples.",
+  
+  "_semantic_drift_note": "Class 51 (shed) exists in both ADE20K and rooftop samples but may have different visual semantics. Class 122 (water_tank) is a valid ADE20K class. Both are kept weighted normally.",
+  
+  "_class_reference": {
+    "_structural_ade20k": {
+      "0": "wall (pixel 1) - bleeds into stubs/tank_stand",
+      "1": "building (pixel 2)",
+      "3": "floor (pixel 4) - rooftop surface",
+      "5": "ceiling (pixel 6) - canopy confusion",
+      "8": "window (pixel 9)",
+      "14": "door (pixel 15)",
+      "38": "railing (pixel 39)",
+      "53": "stairs (pixel 54)",
+      "59": "stairway (pixel 60)",
+      "84": "tower (pixel 85) - confuses with telephone_tower",
+      "86": "awning (pixel 87) - confuses with shed"
+    },
+    "_rooftop_objects": {
+      "51": "shed (pixel 52)",
+      "122": "water_tank (pixel 123) - confuses with tank_stand",
+      "150": "solar_water_heater (pixel 151) - confuses with solar_panel",
+      "151": "solar_panel (pixel 152) - confuses with swh",
+      "152": "ac_outdoor_unit (pixel 153)",
+      "153": "spiral_staircase (pixel 154)",
+      "154": "hammock_swing (pixel 155)",
+      "155": "pipe_conduit (pixel 156)",
+      "156": "wire_clothesline (pixel 157)",
+      "157": "chimney_pipe (pixel 158)",
+      "158": "rod_antenna (pixel 159)",
+      "159": "metal_beam (pixel 160)",
+      "160": "dish_antenna (pixel 161)",
+      "161": "ladder (pixel 162)",
+      "162": "concrete_stub (pixel 163) - confuses with wall",
+      "163": "tank_stand (pixel 164) - confuses with water_tank",
+      "164": "telephone_tower (pixel 165)"
+    }
+  },
+  "median_frequency_weights": {
+    "0": 1.0,
+    "1": 1.0,
+    "3": 1.0,
+    "5": 1.0,
+    "8": 1.0,
+    "14": 1.0,
+    "38": 1.0,
+    "53": 1.0,
+    "59": 1.0,
+    "84": 1.3,
+    "86": 1.0,
+    
+    "50": 1.2,
+    "83": 1.5,
+    "97": 1.8,
+    "98": 2.1,
+    "99": 2.0,
+    "100": 2.0,
+    "101": 2.0,
+    "102": 1.5,
+    "103": 1.5,
+    "104": 2.2,
+    "105": 2.2,
+    "106": 1.8,
+    "107": 1.8,
+    "108": 1.8,
+    "109": 2.5,
+    "110": 2.2,
+    "111": 2.0
+  },
+  "rooftop_class_mapping": {
+    "97": "solar_water_heater",
+    "98": "solar_panel",
+    "99": "ac_outdoor_unit",
+    "100": "spiral_staircase",
+    "101": "hammock_swing",
+    "102": "pipe_conduit",
+    "103": "wire_clothesline",
+    "104": "chimney_pipe",
+    "105": "rod_antenna",
+    "106": "metal_beam",
+    "107": "dish_antenna",
+    "108": "ladder",
+    "109": "concrete_stub",
+    "110": "tank_stand",
+    "111": "telephone_tower"
+  }
+}

@@ -8,25 +8,30 @@
 
 
 import jsonargparse._typehints as _t
+from lightning.pytorch.loggers import WandbLogger
 from types import MethodType
 from gitignore_parser import parse_gitignore
 import logging
 import torch
 import warnings
 from lightning.pytorch import cli
-from lightning.pytorch.callbacks import ModelSummary, LearningRateMonitor
+from lightning.pytorch.callbacks import ModelSummary, LearningRateMonitor, ModelCheckpoint
 from lightning.pytorch.loops.training_epoch_loop import _TrainingEpochLoop
 from lightning.pytorch.loops.fetchers import _DataFetcher, _DataLoaderIterDataFetcher
 
 from training.lightning_module import LightningModule
 from datasets.lightning_data_module import LightningDataModule
+import wandb
+
 
 # Suppress PyTorch FX warnings for DINOv3 models
 import os
 os.environ["TORCH_LOGS"] = "-dynamo"
 
 
+
 _orig_single = _t.raise_unexpected_value
+
 
 
 def _raise_single(*args, exception=None, **kwargs):
@@ -109,6 +114,27 @@ class LightningCLI(cli.LightningCLI):
         )
 
         super().__init__(*args, **kwargs)
+    def before_fit(self):
+        # Replace the default TensorBoard logger with W&B
+        wandb_logger = WandbLogger(
+            project="EoMT",
+            name="ADE_1",
+            log_model=True,
+        )
+        self.trainer.logger = wandb_logger
+
+        # Optional: Watch gradients
+
+        logging.info("✅ WandbLogger attached successfully.")
+        
+
+    def fit_start(self):
+        """Attach wandb.watch after model is ready."""
+        if self.trainer.model is not None:
+            wandb.watch(self.trainer.model, log="all", log_freq=100)
+            logging.info("👀 wandb.watch attached to model successfully.")
+        else:
+            logging.warning("⚠️ Trainer model not initialized yet. Skipping wandb.watch.")
 
     def add_arguments_to_parser(self, parser):
         parser.add_argument("--compile_disabled", action="store_true")
@@ -140,6 +166,7 @@ class LightningCLI(cli.LightningCLI):
         )
 
     def fit(self, model, **kwargs):
+        
         if hasattr(self.trainer.logger.experiment, "log_code"):
             is_gitignored = parse_gitignore(".gitignore")
             include_fn = lambda path: path.endswith(".py") or path.endswith(".yaml")
@@ -153,7 +180,7 @@ class LightningCLI(cli.LightningCLI):
 
         if not self.config[self.config["subcommand"]]["compile_disabled"]:
             model = torch.compile(model)
-
+        
         self.trainer.fit(model, **kwargs)
 
 
@@ -171,6 +198,13 @@ def cli_main():
             "callbacks": [
                 ModelSummary(max_depth=3),
                 LearningRateMonitor(logging_interval="epoch"),
+                ModelCheckpoint(
+                    dirpath="checkpoints",
+                    filename="eomt-{epoch:03d}",
+                    every_n_epochs=2,
+                    save_top_k=-1,
+                    save_last=True,
+                ),
             ],
             "devices": 1,
             "gradient_clip_val": 0.01,
