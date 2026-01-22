@@ -12,7 +12,7 @@ from datasets.lightning_data_module import LightningDataModule
 from datasets.dataset import Dataset
 from datasets.transforms import Transforms
 
-CLASS_MAPPING = {i: i - 1 for i in range(1, 166)}
+CLASS_MAPPING = {i: i - 1 for i in range(1, 167)}
 
 
 class ADE20KSemantic(LightningDataModule):
@@ -22,7 +22,7 @@ class ADE20KSemantic(LightningDataModule):
         num_workers: int = 4,
         batch_size: int = 16,
         img_size: tuple[int, int] = (512, 512),
-        num_classes: int = 165,
+        num_classes: int = 166,
         color_jitter_enabled=True,
         scale_range=(0.5, 2.0),
         check_empty_targets=True,
@@ -81,6 +81,7 @@ class ADE20KSemantic(LightningDataModule):
             target_folder_path_in_zip=Path(
                 "./ADEChallengeData2016/annotations/validation"
             ),
+            transforms=None,  # No augmentation for validation
             **dataset_kwargs,
         )
 

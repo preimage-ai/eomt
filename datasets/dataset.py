@@ -207,10 +207,16 @@ class Dataset(torch.utils.data.Dataset):
             height=img.shape[-2],
         )
 
+        # Detect if this is a rooftop sample (non-ADE20K)
+        # ADE20K samples have filenames starting with "ADE"
+        img_filename = Path(self.imgs[index]).name
+        is_rooftop_sample = not img_filename.startswith("ADE")
+        
         target = {
             "masks": tv_tensors.Mask(torch.stack(masks)),
             "labels": torch.tensor(labels),
             "is_crowd": torch.tensor(is_crowd),
+            "is_rooftop": is_rooftop_sample,
         }
 
         if self.transforms is not None:

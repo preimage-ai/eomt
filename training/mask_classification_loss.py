@@ -13,6 +13,8 @@ from typing import List, Optional
 import torch.distributed as dist
 import torch
 import torch.nn as nn
+import json
+from pathlib import Path
 from transformers.models.mask2former.modeling_mask2former import (
     Mask2FormerLoss,
     Mask2FormerHungarianMatcher,
@@ -30,6 +32,8 @@ class MaskClassificationLoss(Mask2FormerLoss):
         class_coefficient: float,
         num_labels: int,
         no_object_coefficient: float,
+        class_weights_path: Optional[str] = None,
+        ade_asymmetric_loss: bool = False,
     ):
         nn.Module.__init__(self)
         self.num_points = num_points
@@ -40,9 +44,24 @@ class MaskClassificationLoss(Mask2FormerLoss):
         self.class_coefficient = class_coefficient
         self.num_labels = num_labels
         self.eos_coef = no_object_coefficient
+        self.ade_asymmetric_loss = False
+        
+        # Load class weights and rooftop class IDs
+        class_weights, rooftop_class_ids = self._load_class_weights(class_weights_path, num_labels)
+        self.rooftop_class_ids = rooftop_class_ids  # classes only annotated in rooftop samples
+        
         empty_weight = torch.ones(self.num_labels + 1)
+        if class_weights is not None:
+            empty_weight[:self.num_labels] = class_weights
         empty_weight[-1] = self.eos_coef
         self.register_buffer("empty_weight", empty_weight)
+        
+        # Create weight tensor for ADE20K samples (rooftop classes masked to 0)
+        ade20k_weight = empty_weight.clone()
+        for cid in self.rooftop_class_ids:
+            if 0 <= cid < num_labels:
+                ade20k_weight[cid] = 0.0
+        self.register_buffer("ade20k_weight", ade20k_weight)
 
         self.matcher = Mask2FormerHungarianMatcher(
             num_points=num_points,
@@ -50,6 +69,73 @@ class MaskClassificationLoss(Mask2FormerLoss):
             cost_dice=dice_coefficient,
             cost_class=class_coefficient,
         )
+    
+    def _load_class_weights(self, weights_path: Optional[str], num_labels: int) -> tuple:
+        """
+        Load class weights from JSON file.
+        
+        IMPORTANT: JSON keys must be 0-indexed class IDs (i.e., pixel_id - 1).
+        For example: pixel_id 123 (water_tank) -> class_id 122 in the JSON.
+        
+        Classes not specified in the JSON default to weight 1.0.
+        
+        Returns:
+            tuple: (weights tensor, list of rooftop-only class IDs)
+        """
+        if weights_path is None:
+            return None, []
+        
+        weights_file = Path(weights_path)
+        if not weights_file.exists():
+            print(f"Warning: Class weights file not found at {weights_path}. Using uniform weights.")
+            return None, []
+        
+        try:
+            with open(weights_file, 'r') as f:
+                data = json.load(f)
+            
+            # Use median frequency weights (recommended for balanced training)
+            median_weights = data.get('median_frequency_weights', {})
+            
+            # Load rooftop-only class IDs (classes not annotated in ADE20K original)
+            rooftop_class_ids = data.get('rooftop_only_class_ids', [])
+            
+            if not median_weights:
+                print("Warning: 'median_frequency_weights' not found in JSON. Using uniform weights.")
+                return None, rooftop_class_ids
+            
+            # Create weight tensor - default all classes to 1.0
+            weights = torch.ones(num_labels)
+            loaded_classes = []
+            
+            for class_id_str, weight in median_weights.items():
+                # Skip comment/metadata keys
+                if class_id_str.startswith('_'):
+                    continue
+                try:
+                    class_id = int(class_id_str)
+                    if 0 <= class_id < num_labels:
+                        weights[class_id] = float(weight)
+                        loaded_classes.append((class_id, weight))
+                except (ValueError, TypeError):
+                    continue
+            
+            print(f"✓ Loaded class weights from {weights_path}")
+            print(f"  Applied weights to {len(loaded_classes)} classes (others default to 1.0)")
+            print(f"  Rooftop-only classes (masked for ADE20K): {len(rooftop_class_ids)}")
+            
+            # Show weighted classes for verification
+            weighted_above_1 = [(c, w) for c, w in loaded_classes if w > 1.0]
+            if weighted_above_1:
+                print(f"  Classes with weight > 1.0: {len(weighted_above_1)}")
+                for cid, w in sorted(weighted_above_1, key=lambda x: -x[1])[:5]:
+                    print(f"    class {cid}: {w:.2f}")
+            
+            return weights, rooftop_class_ids
+            
+        except Exception as e:
+            print(f"Error loading class weights from {weights_path}: {e}")
+            return None, []
 
     @torch.compiler.disable
     def forward(
@@ -102,6 +188,9 @@ class MaskClassificationLoss(Mask2FormerLoss):
 
         # class labels (long on correct device)
         class_labels = [target["labels"].long().to(masks_queries_logits.device) for target in targets]
+        
+        # extract is_rooftop flags for sample-aware loss weighting
+        is_rooftop_flags = [target.get("is_rooftop", True) for target in targets]
 
         # call matcher with diagnostics on failure
         try:
@@ -125,11 +214,109 @@ class MaskClassificationLoss(Mask2FormerLoss):
             raise
 
         loss_masks = self.loss_masks(masks_queries_logits, mask_labels, indices)
-        loss_classes = self.loss_labels(class_queries_logits, class_labels, indices)
+        loss_classes = self.loss_labels_weighted(class_queries_logits, class_labels, indices, is_rooftop_flags)
 
         return {**loss_masks, **loss_classes}
 
 
+
+    def loss_labels_weighted(self, class_queries_logits, class_labels, indices, is_rooftop_flags):
+        """
+        Sample-aware cross-entropy loss.
+        For ADE20K samples (is_rooftop=False):
+          - If ade_asymmetric_loss=True: Only penalize false positives for rooftop-only classes
+          - If ade_asymmetric_loss=False: Use ade20k_weight (rooftop classes weighted to 0)
+        For rooftop samples (is_rooftop=True), use full empty_weight.
+        """
+        pred_logits = class_queries_logits
+        batch_size, num_queries, _ = pred_logits.shape
+        
+        # Build per-sample target tensor
+        idx = self._get_predictions_permutation_indices(indices)
+        target_classes_o = torch.cat([t[J] for t, (_, J) in zip(class_labels, indices)])
+        target_classes = torch.full(
+            (batch_size, num_queries), self.num_labels,
+            dtype=torch.int64, device=pred_logits.device
+        )
+        target_classes[idx] = target_classes_o
+        
+        # Compute loss per sample with appropriate weights
+        loss_ce = torch.tensor(0.0, device=pred_logits.device)
+        for b in range(batch_size):
+            if is_rooftop_flags[b]:
+                # Rooftop sample: use full weights
+                sample_loss = torch.nn.functional.cross_entropy(
+                    pred_logits[b], target_classes[b], weight=self.empty_weight
+                )
+            # elif self.ade_asymmetric_loss:
+            #     # ADE20K sample with asymmetric loss: only penalize false positives for rooftop classes
+            #     sample_loss = self._asymmetric_cross_entropy(
+            #         pred_logits[b], target_classes[b]
+            #     )
+            else:
+                # ADE20K sample with standard weighted loss
+                sample_loss = torch.nn.functional.cross_entropy(
+                    pred_logits[b], target_classes[b], weight=self.ade20k_weight
+                )
+            loss_ce = loss_ce + sample_loss
+        
+        loss_ce = loss_ce / batch_size
+        return {"loss_cross_entropy": loss_ce}
+
+    def _asymmetric_cross_entropy(self, logits, targets):
+        """
+        Asymmetric cross-entropy for ADE20K samples.
+        For rooftop-only classes:
+          - Penalize false positives (predicting rooftop class when target is non-rooftop)
+          - Do NOT penalize false negatives (missing rooftop class predictions)
+        For other classes: use normal weighted cross-entropy.
+        
+        Args:
+            logits: [num_queries, num_classes+1] prediction logits
+            targets: [num_queries] target class indices
+        """
+        num_queries = logits.shape[0]
+        num_classes = self.num_labels + 1
+        
+        # Compute log probabilities
+        log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
+        
+        # Create rooftop class mask
+        rooftop_mask = torch.zeros(num_classes, dtype=torch.bool, device=logits.device)
+        for cid in self.rooftop_class_ids:
+            if 0 <= cid < self.num_labels:
+                rooftop_mask[cid] = True
+        
+        loss = torch.tensor(0.0, device=logits.device)
+        
+        for q in range(num_queries):
+            target_class = targets[q].item()
+            
+            # Get class weight for this target
+            weight = self.empty_weight[target_class]
+            
+            if target_class < self.num_labels and rooftop_mask[target_class]:
+                # Target is a rooftop-only class (shouldn't happen in ADE20K, but handle it)
+                # Don't penalize at all since it's unlabeled in ADE20K
+                continue
+            else:
+                # Target is a non-rooftop class or no-object
+                # Standard cross-entropy for this query
+                query_loss = -log_probs[q, target_class] * weight
+                
+                # Additionally penalize if model predicts rooftop classes (false positive)
+                # by adding extra loss for high probability on rooftop classes
+                probs = torch.exp(log_probs[q])
+                for cid in self.rooftop_class_ids:
+                    if 0 <= cid < self.num_labels:
+                        # Penalize false positive: predicting rooftop class when target is not
+                        # Use KL-divergence style penalty: p * log(p) to penalize high confidence
+                        fp_penalty = probs[cid] * log_probs[q, cid]
+                        query_loss = query_loss - fp_penalty  # subtract because log_probs is negative
+                
+                loss = loss + query_loss
+        
+        return loss / num_queries
 
     def loss_masks(self, masks_queries_logits, mask_labels, indices):
         loss_masks = super().loss_masks(masks_queries_logits, mask_labels, indices, 1)
