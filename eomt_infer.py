@@ -62,8 +62,8 @@ class EOMTSegmentationInference:
     def _fix_import_path(self, class_path: str) -> str:
         """Fix import paths from config"""
         replacements = {
-            'models.vit.ViT': 'models.eomt.vit.ViT',
-            'models.eomt.EoMT': 'models.eomt.eomt.EoMT',
+            'models.vit.ViT': 'models.vit.ViT',
+            'models.eomt.EoMT': 'models.eomt.EoMT',
         }
         return replacements.get(class_path, class_path)
 
@@ -284,8 +284,22 @@ class EOMTSegmentationInference:
             class_probs = class_logits_per_layer[-1].softmax(dim=-1)[..., :-1]  # Exclude void
             per_pixel_logits = torch.einsum('bqhw,bqc->bchw', mask_probs, class_probs)
             
-            preds = per_pixel_logits.argmax(1)[0].cpu().numpy()
+            preds = per_pixel_logits.argmax(1)[0]
         
+            min_conf = 0.1
+            stuff_class_list = [1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            objects_mask = torch.tensor(stuff_class_list, device=self.device).bool() == 0
+            objects_mask[51] = True # shed class priority
+            objects_index_tensor = torch.arange(per_pixel_logits.shape[1], device=self.device)[objects_mask]
+            per_pixel_objects_logits = per_pixel_logits[:, objects_mask, ...]
+            has_objects = per_pixel_objects_logits[0].max(0)[0] > min_conf
+            # not_void = preds != 165
+            # has_objects = has_objects & not_void
+            objects_selected = per_pixel_logits[:, objects_mask][:, :, has_objects].argmax(1)[0]
+            preds[has_objects] = objects_index_tensor[objects_selected]
+
+            preds = preds.cpu().numpy()
+
         # Resize to original size
         if preds.shape != orig_size:
             preds = cv2.resize(
