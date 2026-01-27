@@ -9,8 +9,8 @@ trainer:
 model:
   class_path: training.mask_classification_semantic.MaskClassificationSemantic
   init_args:
-    # class_weights_path: "rooftop_class_weights.json"
-    num_classes: 165
+    class_weights_path: "rooftop_class_weights.json"
+    num_classes: 166
     attn_mask_annealing_enabled: True
     attn_mask_annealing_start_steps: [0, 6520, 9780, 13040]
     attn_mask_annealing_end_steps: [3000, 9780, 13040, 16300]
@@ -22,7 +22,7 @@ model:
     network:
       class_path: models.eomt.EoMT
       init_args:
-        num_q: 100
+        num_q: 150
         encoder:
           class_path: models.vit.ViT
           init_args:
@@ -33,4 +33,4 @@ data:
     batch_size: 16
     num_workers: 4
     img_size: [512, 512]
-    num_classes: 165
+    num_classes: 166

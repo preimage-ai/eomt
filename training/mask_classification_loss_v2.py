@@ -44,7 +44,7 @@ class MaskClassificationLoss(Mask2FormerLoss):
         self.class_coefficient = class_coefficient
         self.num_labels = num_labels
         self.eos_coef = no_object_coefficient
-        self.ade_asymmetric_loss = ade_asymmetric_loss
+        self.ade_asymmetric_loss = False
         
         # Load class weights and rooftop class IDs
         class_weights, rooftop_class_ids = self._load_class_weights(class_weights_path, num_labels)
@@ -248,11 +248,11 @@ class MaskClassificationLoss(Mask2FormerLoss):
                 sample_loss = torch.nn.functional.cross_entropy(
                     pred_logits[b], target_classes[b], weight=self.empty_weight
                 )
-            elif self.ade_asymmetric_loss:
-                # ADE20K sample with asymmetric loss: only penalize false positives for rooftop classes
-                sample_loss = self._asymmetric_cross_entropy(
-                    pred_logits[b], target_classes[b]
-                )
+            # elif self.ade_asymmetric_loss:
+            #     # ADE20K sample with asymmetric loss: only penalize false positives for rooftop classes
+            #     sample_loss = self._asymmetric_cross_entropy(
+            #         pred_logits[b], target_classes[b]
+            #     )
             else:
                 # ADE20K sample with standard weighted loss
                 sample_loss = torch.nn.functional.cross_entropy(

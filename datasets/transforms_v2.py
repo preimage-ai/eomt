@@ -124,3 +124,35 @@ class Transforms(nn.Module):
         target = self._filter(target, valid)
 
         return img, target
+
+
+ def pad(
+        self, img: Tensor, target: dict[str, Any]
+    ) -> tuple[Tensor, dict[str, Union[Tensor, TVTensor]]]:
+        pad_h = max(0, self.img_size[-2] - img.shape[-2])
+        pad_w = max(0, self.img_size[-1] - img.shape[-1])
+        padding = [0, 0, pad_w, pad_h]
+
+        img = F.pad(img, padding)
+        
+        # Handle masks with different shapes after panoramic distortion
+        masks = target["masks"]
+        if masks.dim() == 4 and masks.shape[1] == 1:
+            # Mask has extra channel dimension (N, 1, H, W) - squeeze it for padding
+            masks_squeezed = masks.squeeze(1)
+            masks_padded = F.pad(masks_squeezed, padding)
+            # Add channel dimension back
+            target["masks"] = masks_padded.unsqueeze(1)
+        elif masks.dim() == 2:
+            # Handle 2D mask (H, W) - add batch and channel dimensions
+            masks = masks.unsqueeze(0).unsqueeze(0)  # (1, 1, H, W)
+            masks_padded = F.pad(masks, padding)
+            target["masks"] = masks_padded.squeeze(0)  # Back to (1, H, W)
+        else:
+            # Normal mask padding (should be 3D: 1, H, W)
+            if masks.dim() == 3 and masks.shape[0] == 1:
+                # Add batch dimension if missing
+                masks = masks.unsqueeze(0)
+            target["masks"] = F.pad(masks, padding)
+
+        return img, target

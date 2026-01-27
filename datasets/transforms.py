@@ -463,7 +463,7 @@ class Transforms(nn.Module):
         saturation_factor: float = 0.5,
         max_hue_delta: int = 18,
         # Panoramic distortion parameters
-        panoramic_enabled: bool = True,
+        panoramic_enabled: bool = False,
         panoramic_intensity: float = 0.3,
         panoramic_apply_prob: float = 0.1,
         panoramic_fov_deg: float = 90.0,
