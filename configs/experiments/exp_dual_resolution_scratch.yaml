@@ -1,0 +1,29 @@
+trainer:
+  max_epochs: 100
+model:
+  class_path: training.mask_classification_semantic.MaskClassificationSemantic
+  init_args:
+    class_weights_path: rooftop_class_weights.json
+    num_classes: 166
+    attn_mask_annealing_enabled: True
+    attn_mask_annealing_start_steps: [2000, 4000, 6000, 8000]
+    attn_mask_annealing_end_steps: [4000, 6000, 8000, 10000]
+    network:
+      class_path: models.eomt.EoMT
+      init_args:
+        num_q: 150
+        encoder:
+          class_path: models.vit_multiscale.ViTMultiScale
+          init_args:
+            support_multi_resolution: true
+data:
+  class_path: datasets.dual_resolution_train.DualResolutionTrain
+  init_args:
+    perspective_img_size: [512, 512]
+    erp_img_size: [1024, 2048]
+    batch_size: 16
+    num_workers: 4
+    color_jitter_enabled: true
+    scale_range: [0.5, 2.0]
+    perspective_ratio: 0.95
+    erp_augmentation_factor: 200
