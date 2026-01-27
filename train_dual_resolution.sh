@@ -82,13 +82,12 @@ echo ""
 echo "Starting training in 3 seconds... (Ctrl+C to cancel)"
 sleep 3
 
-# Execute training
+# Execute training (using windowed ERP crops)
 python main.py fit \
-    --config configs/experiments/exp_dual_resolution_scratch.yaml \
+    --config configs/experiments/exp_dual_resolution_windowed.yaml \
     --data.init_args.perspective_path $ADE20K_PATH \
     --data.init_args.erp_image_dir $ERP_IMAGES \
     --data.init_args.erp_mask_dir $ERP_MASKS \
-    --trainer.callbacks.dirpath checkpoints/dual_resolution_scratch \
     --trainer.devices 1 \
     --trainer.precision "16-mixed"
 

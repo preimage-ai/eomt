@@ -619,10 +619,13 @@ class LightningModule(lightning.LightningModule):
         for i in range(len(imgs)):
             img = imgs[i]
             new_h, new_w = self.scale_img_size_semantic(img.shape[-2:])
-            pil_img = Image.fromarray(img.permute(1, 2, 0).cpu().numpy())
+            # Convert normalized float tensor (0-1) to uint8 (0-255) for PIL
+            img_np = (img.permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
+            pil_img = Image.fromarray(img_np)
             resized_img = pil_img.resize((new_w, new_h), Image.BILINEAR)
+            # Convert back to normalized float tensor
             resized_img = (
-                torch.from_numpy(np.array(resized_img)).permute(2, 0, 1).to(img.device)
+                torch.from_numpy(np.array(resized_img)).permute(2, 0, 1).float().to(img.device) / 255.0
             )
 
             num_crops = math.ceil(max(resized_img.shape[-2:]) / min(self.img_size))

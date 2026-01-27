@@ -40,6 +40,7 @@ class ViTMultiScale(nn.Module):
                 img_size=img_size,
                 patch_size=patch_size,
                 num_classes=0,
+                dynamic_img_size=support_multi_resolution,  # Allow variable input sizes
             )
 
         pixel_mean = torch.tensor([0.485, 0.456, 0.406]).reshape(1, -1, 1, 1)
@@ -51,6 +52,10 @@ class ViTMultiScale(nn.Module):
         # Store original position embeddings for interpolation
         if hasattr(self.backbone, 'pos_embed'):
             self.register_buffer("base_pos_embed", self.backbone.pos_embed.clone())
+        
+        # Disable strict size checking in patch_embed if multi-resolution is enabled
+        if support_multi_resolution and hasattr(self.backbone, 'patch_embed'):
+            self.backbone.patch_embed.strict_img_size = False
 
     def interpolate_pos_encoding(self, x: torch.Tensor, w: int, h: int):
         """

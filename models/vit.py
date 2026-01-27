@@ -36,6 +36,7 @@ class ViT(nn.Module):
                 img_size=img_size,
                 patch_size=patch_size,
                 num_classes=0,
+                dynamic_img_size=True,  # Allow variable input sizes
             )
 
         pixel_mean = torch.tensor([0.485, 0.456, 0.406]).reshape(1, -1, 1, 1)
@@ -43,6 +44,10 @@ class ViT(nn.Module):
 
         self.register_buffer("pixel_mean", pixel_mean)
         self.register_buffer("pixel_std", pixel_std)
+        
+        # Disable strict size checking in patch_embed
+        if hasattr(self.backbone, 'patch_embed'):
+            self.backbone.patch_embed.strict_img_size = False
 
     def transformers_to_timm(self, backbone, img_size: tuple[int, int]):
         backbone.patch_embed = backbone.embeddings

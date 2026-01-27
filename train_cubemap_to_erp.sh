@@ -148,7 +148,6 @@ if [ "$NEEDS_PERSPECTIVE" == "1" ]; then
         --data.init_args.erp_mask_dir $ERP_MASKS \
         --model.init_args.ckpt_path $CHECKPOINT \
         --optimizer.init_args.lr $LR \
-        --trainer.callbacks.dirpath checkpoints/$NAME \
         --trainer.devices 1 \
         --trainer.precision "16-mixed"
 else
@@ -159,7 +158,6 @@ else
         --data.init_args.erp_mask_dir $ERP_MASKS \
         --model.init_args.ckpt_path $CHECKPOINT \
         --optimizer.init_args.lr $LR \
-        --trainer.callbacks.dirpath checkpoints/$NAME \
         --trainer.devices 1 \
         --trainer.precision "16-mixed"
 fi

@@ -1,6 +1,6 @@
 trainer:
   max_epochs: 100
-  default_root_dir: checkpoints/dual_resolution_scratch
+  default_root_dir: checkpoints/dual_resolution_windowed
 model:
   class_path: training.mask_classification_semantic.MaskClassificationSemantic
   init_args:
@@ -17,10 +17,10 @@ model:
         encoder:
           class_path: models.vit.ViT
 data:
-  class_path: datasets.dual_resolution_train.DualResolutionTrain
+  class_path: datasets.dual_resolution_windowed.DualResolutionWindowed
   init_args:
     perspective_img_size: [512, 512]
-    erp_img_size: [512, 512]
+    erp_crop_size: [512, 512]
     batch_size: 16
     num_workers: 4
     color_jitter_enabled: true

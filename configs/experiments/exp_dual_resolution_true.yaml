@@ -1,10 +1,10 @@
 trainer:
   max_epochs: 100
-  default_root_dir: checkpoints/dual_resolution_scratch
+  default_root_dir: checkpoints/dual_resolution_true
 model:
-  class_path: training.mask_classification_semantic.MaskClassificationSemantic
+  class_path: training.dual_resolution_semantic.DualResolutionSemantic
   init_args:
-    img_size: [512, 512]
+    img_size: [512, 512]  # Base size for model initialization
     class_weights_path: rooftop_class_weights.json
     num_classes: 166
     attn_mask_annealing_enabled: True
@@ -17,13 +17,14 @@ model:
         encoder:
           class_path: models.vit.ViT
 data:
-  class_path: datasets.dual_resolution_train.DualResolutionTrain
+  class_path: datasets.dual_resolution_true.DualResolutionTrue
   init_args:
     perspective_img_size: [512, 512]
-    erp_img_size: [512, 512]
+    erp_img_size: [512, 1024]
     batch_size: 16
     num_workers: 4
     color_jitter_enabled: true
     scale_range: [0.5, 2.0]
     perspective_ratio: 0.95
-    erp_augmentation_factor: 200
+    erp_augmentation_factor: 100
+

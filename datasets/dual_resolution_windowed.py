@@ -18,44 +18,44 @@ from datasets.transforms import Transforms
 CLASS_MAPPING = {i: i - 1 for i in range(1, 167)}
 
 
-class DualResolutionTrain(LightningDataModule):
+class DualResolutionWindowed(LightningDataModule):
     """
-    Dual-resolution training from scratch with mixed batches.
+    Dual-resolution training with windowed ERP crops.
     
     Strategy:
-    - Perspective images (512×512) from ADE20K zip
-    - ERP images (1024×2048) from separate folder
-    - Mixed within each batch for multi-scale learning
-    - Multi-scale ViT handles both resolutions
+    - Perspective: Standard 512×512 images from ADE20K
+    - ERP: Extract random 512×512 crops from native resolution (e.g., 1024×2048)
+    - Mixed within each batch
+    - Preserves ERP native resolution and aspect ratio
     
-    Key features:
-    1. Single dataloader with mixed sampling
-    2. Batch-level mixing for stable gradients
-    3. Rooftop-only classes (150-165) masked for perspective samples
-    4. Supports zipped ADE20K dataset
+    Key improvements:
+    1. No squishing of ERP images
+    2. Trains on native ERP resolution via windowing
+    3. Each epoch sees different crops from ERP images
+    4. Panorama-specific augmentations still applied
     """
     def __init__(
         self,
-        perspective_path: str,  # Path to ADE20K zip folder
+        perspective_path: str,  # ADE20K path
         erp_image_dir: str,
         erp_mask_dir: str,
         num_workers: int = 4,
-        batch_size: int = 8,
+        batch_size: int = 16,
         perspective_img_size: Tuple[int, int] = (512, 512),
-        erp_img_size: Tuple[int, int] = (1024, 2048),
+        erp_crop_size: Tuple[int, int] = (512, 512),  # Crop size from ERP
         num_classes: int = 166,
         color_jitter_enabled: bool = True,
         scale_range: Tuple[float, float] = (0.5, 2.0),
         check_empty_targets: bool = True,
-        perspective_ratio: float = 0.7,  # 70% perspective, 30% ERP per batch
-        erp_augmentation_factor: int = 50,  # Repeat ERP samples for balance
+        perspective_ratio: float = 0.95,  # 95% perspective, 5% ERP
+        erp_augmentation_factor: int = 200,  # Each ERP image produces many crops
     ) -> None:
         super().__init__(
             path=perspective_path,
             batch_size=batch_size,
             num_workers=num_workers,
             num_classes=num_classes,
-            img_size=erp_img_size,  # Use larger size as base
+            img_size=perspective_img_size,
             check_empty_targets=check_empty_targets,
         )
         
@@ -63,7 +63,7 @@ class DualResolutionTrain(LightningDataModule):
         self.erp_image_dir = Path(erp_image_dir)
         self.erp_mask_dir = Path(erp_mask_dir)
         self.perspective_img_size = perspective_img_size
-        self.erp_img_size = erp_img_size
+        self.erp_crop_size = erp_crop_size
         self.perspective_ratio = perspective_ratio
         self.erp_augmentation_factor = erp_augmentation_factor
         
@@ -72,16 +72,16 @@ class DualResolutionTrain(LightningDataModule):
         self.erp_per_batch = batch_size - self.perspective_per_batch
         
         print(f"\n{'='*70}")
-        print(f"Dual-Resolution Training from Scratch")
+        print(f"Dual-Resolution Windowed Training")
         print(f"{'='*70}")
-        print(f"Perspective (ADE20K):")
+        print(f"Perspective:")
         print(f"  - Path: {perspective_path}")
         print(f"  - Resolution: {perspective_img_size}")
         print(f"  - Samples per batch: {self.perspective_per_batch}")
-        print(f"ERP:")
+        print(f"ERP (Windowed):")
         print(f"  - Path: {erp_image_dir}")
-        print(f"  - Resolution: {erp_img_size}")
-        print(f"  - Augmentation: {erp_augmentation_factor}x")
+        print(f"  - Crop size: {erp_crop_size} (extracted from native resolution)")
+        print(f"  - Augmentation: {erp_augmentation_factor}x crops per image")
         print(f"  - Samples per batch: {self.erp_per_batch}")
         print(f"Batch composition: {self.perspective_per_batch} perspective + {self.erp_per_batch} ERP = {batch_size} total")
         print(f"{'='*70}\n")
@@ -95,10 +95,10 @@ class DualResolutionTrain(LightningDataModule):
             scale_range=scale_range,
         )
         
-        self.erp_transforms = ERPAugmentedTransforms(
-            img_size=erp_img_size,
+        # ERP transforms without resizing (crops are already correct size)
+        self.erp_transforms = ERPWindowedTransforms(
+            crop_size=erp_crop_size,
             color_jitter_enabled=color_jitter_enabled,
-            scale_range=scale_range,
             horizontal_wrap=True,
             vertical_shift=True,
         )
@@ -119,7 +119,7 @@ class DualResolutionTrain(LightningDataModule):
         return masks, labels, [False for _ in range(len(masks))]
 
     def setup(self, stage: Union[str, None] = None) -> LightningDataModule:
-        # Load perspective dataset from ADE20K zip
+        # Load perspective dataset (ADE20K)
         dataset_kwargs = {
             "img_suffix": ".jpg",
             "target_suffix": ".png",
@@ -164,28 +164,30 @@ class DualResolutionTrain(LightningDataModule):
                 f"Found {len(erp_images)} ERP images in {self.erp_image_dir}, "
                 f"but no corresponding masks in {self.erp_mask_dir}\n"
                 f"Missing masks for: {[m.name for m in missing_masks[:5]]}...\n"
-                f"Expected mask format: <image_stem>.png"
+                f"Expected mask format: <image_stem>_mask_ids.png"
             )
         
         print(f"Found {len(perspective_train_dataset)} perspective training images")
         print(f"Found {len(perspective_val_dataset)} perspective validation images")
-        print(f"Found {len(erp_pairs)} ERP images (will be augmented {self.erp_augmentation_factor}x)")
+        print(f"Found {len(erp_pairs)} ERP images (will extract {self.erp_augmentation_factor} crops each)")
         
         # Split ERP into train/val
         val_split = max(1, len(erp_pairs) // 10)
         erp_train_pairs = erp_pairs[val_split:]
         erp_val_pairs = erp_pairs[:val_split]
         
-        # Create ERP datasets with augmentation
-        erp_train_dataset = ERPAugmentedDataset(
+        # Create ERP datasets with windowed cropping
+        erp_train_dataset = ERPWindowedDataset(
             erp_train_pairs,
+            crop_size=self.erp_crop_size,
             transforms=self.erp_transforms,
             augmentation_factor=self.erp_augmentation_factor,
             target_parser=self.target_parser,
         )
         
-        erp_val_dataset = ERPAugmentedDataset(
+        erp_val_dataset = ERPWindowedDataset(
             erp_val_pairs,
+            crop_size=self.erp_crop_size,
             transforms=None,  # No augmentation for validation
             augmentation_factor=1,
             target_parser=self.target_parser,
@@ -196,17 +198,13 @@ class DualResolutionTrain(LightningDataModule):
             perspective_dataset=perspective_train_dataset,
             erp_dataset=erp_train_dataset,
             perspective_ratio=self.perspective_ratio,
-            perspective_img_size=self.perspective_img_size,
-            erp_img_size=self.erp_img_size,
         )
         
-        # For validation, create mixed dataset too
+        # For validation, use mixed dataset too
         self.val_dataset = MixedResolutionDataset(
             perspective_dataset=perspective_val_dataset,
             erp_dataset=erp_val_dataset,
             perspective_ratio=self.perspective_ratio,
-            perspective_img_size=self.perspective_img_size,
-            erp_img_size=self.erp_img_size,
         )
 
         return self
@@ -229,29 +227,17 @@ class DualResolutionTrain(LightningDataModule):
 
 
 class MixedResolutionDataset(TorchDataset):
-    """
-    Dataset that mixes perspective and ERP samples with different resolutions.
-    
-    Each batch will contain:
-    - perspective_ratio * batch_size perspective images (512×512)
-    - (1 - perspective_ratio) * batch_size ERP images (1024×2048)
-    
-    Returns metadata to indicate source for class weight masking.
-    """
+    """Dataset that mixes perspective and ERP samples"""
     
     def __init__(
         self,
         perspective_dataset,
         erp_dataset,
         perspective_ratio: float,
-        perspective_img_size: Tuple[int, int],
-        erp_img_size: Tuple[int, int],
     ):
         self.perspective_dataset = perspective_dataset
         self.erp_dataset = erp_dataset
         self.perspective_ratio = perspective_ratio
-        self.perspective_img_size = perspective_img_size
-        self.erp_img_size = erp_img_size
         
         # Use the larger dataset as base length
         self.length = max(len(perspective_dataset), len(erp_dataset))
@@ -264,26 +250,24 @@ class MixedResolutionDataset(TorchDataset):
         if random.random() < self.perspective_ratio:
             # Get perspective sample
             img, target = self.perspective_dataset[idx % len(self.perspective_dataset)]
-            source = "perspective"
-            img_size = self.perspective_img_size
         else:
-            # Get ERP sample
+            # Get ERP sample (already cropped to 512x512)
             img, target = self.erp_dataset[idx % len(self.erp_dataset)]
-            source = "erp"
-            img_size = self.erp_img_size
         
-        # Target is already (masks, labels, is_crowd) from target_parser
-        # Just return it as-is with the image
-        # Note: We're not adding metadata here since the loss function
-        # will use rooftop_class_ids to mask appropriately
         return img, target
 
 
-class ERPAugmentedDataset(TorchDataset):
-    """Dataset that applies heavy augmentation to ERP samples"""
+class ERPWindowedDataset(TorchDataset):
+    """
+    Dataset that extracts random 512×512 crops from native resolution ERP images.
     
-    def __init__(self, image_mask_pairs, transforms, augmentation_factor, target_parser):
+    Each ERP image produces multiple crops via augmentation_factor.
+    Crops are extracted randomly, preserving native resolution.
+    """
+    
+    def __init__(self, image_mask_pairs, crop_size, transforms, augmentation_factor, target_parser):
         self.pairs = image_mask_pairs
+        self.crop_size = crop_size
         self.transforms = transforms
         self.augmentation_factor = augmentation_factor
         self.target_parser = target_parser
@@ -296,51 +280,71 @@ class ERPAugmentedDataset(TorchDataset):
         original_idx = idx % len(self.pairs)
         img_path, mask_path = self.pairs[original_idx]
         
-        # Load image and mask
+        # Load image and mask at native resolution
         img = Image.open(img_path).convert('RGB')
-        mask = Image.open(mask_path)
+        mask = Image.open(mask_path).convert('L')  # Load as grayscale
         
         img = torch.from_numpy(np.array(img)).permute(2, 0, 1).float() / 255.0
-        mask = torch.from_numpy(np.array(mask)).unsqueeze(0)
+        mask = torch.from_numpy(np.array(mask)).unsqueeze(0).long()  # Single channel, long dtype
         
-        # Apply transforms
+        # Extract random crop
+        img, mask = self._random_crop(img, mask, self.crop_size)
+        
+        # Apply transforms (augmentations, no resizing)
         if self.transforms:
             img, mask = self.transforms(img, mask)
         
         # Parse target
         masks, labels, is_crowd = self.target_parser(mask)
         
-        return img, (masks, labels, is_crowd)
+        # Convert to dict format expected by validation
+        target = {
+            "masks": torch.stack(masks) if masks else torch.zeros((0, *mask.shape[-2:])),
+            "labels": torch.tensor(labels, dtype=torch.long),
+            "is_crowd": torch.tensor(is_crowd, dtype=torch.bool),
+        }
+        
+        return img, target
+    
+    def _random_crop(self, img, mask, crop_size):
+        """Extract random crop from image and mask"""
+        _, h, w = img.shape
+        crop_h, crop_w = crop_size
+        
+        # If image is smaller than crop size, pad it
+        if h < crop_h or w < crop_w:
+            pad_h = max(0, crop_h - h)
+            pad_w = max(0, crop_w - w)
+            img = torch.nn.functional.pad(img, (0, pad_w, 0, pad_h), mode='reflect')
+            mask = torch.nn.functional.pad(mask, (0, pad_w, 0, pad_h), mode='reflect')
+            _, h, w = img.shape
+        
+        # Random crop position
+        top = random.randint(0, h - crop_h)
+        left = random.randint(0, w - crop_w)
+        
+        img_crop = img[:, top:top+crop_h, left:left+crop_w]
+        mask_crop = mask[:, top:top+crop_h, left:left+crop_w]
+        
+        return img_crop, mask_crop
 
 
-class ERPAugmentedTransforms:
-    """Augmentation optimized for ERP panoramas"""
+class ERPWindowedTransforms:
+    """Augmentation for windowed ERP crops (no resizing needed)"""
     
     def __init__(
         self,
-        img_size,
+        crop_size,
         color_jitter_enabled=True,
-        scale_range=(0.5, 2.0),
         horizontal_wrap=True,
         vertical_shift=True,
     ):
-        self.img_size = img_size
+        self.crop_size = crop_size
         self.color_jitter_enabled = color_jitter_enabled
-        self.scale_range = scale_range
         self.horizontal_wrap = horizontal_wrap
         self.vertical_shift = vertical_shift
-        
-        # Use standard transforms as base
-        self.base_transforms = Transforms(
-            img_size=img_size,
-            color_jitter_enabled=color_jitter_enabled,
-            scale_range=scale_range,
-        )
     
     def __call__(self, img, mask):
-        # Apply base transforms first
-        img, mask = self.base_transforms(img, mask)
-        
         # Panorama-specific augmentations
         if self.horizontal_wrap and random.random() < 0.8:
             # Horizontal wrapping (critical for panoramas)
@@ -353,5 +357,15 @@ class ERPAugmentedTransforms:
             shift = random.randint(-img.shape[-2] // 6, img.shape[-2] // 6)
             img = torch.roll(img, shift, dims=-2)
             mask = torch.roll(mask, shift, dims=-2)
+        
+        # Light color augmentation
+        if self.color_jitter_enabled and random.random() < 0.5:
+            factor = random.uniform(0.9, 1.1)
+            img = torch.clamp(img * factor, 0, 1)
+        
+        # Random horizontal flip
+        if random.random() < 0.5:
+            img = torch.flip(img, dims=[-1])
+            mask = torch.flip(mask, dims=[-1])
         
         return img, mask

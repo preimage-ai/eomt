@@ -8,6 +8,7 @@ import sys
 import importlib
 import argparse
 import yaml
+import math
 import numpy as np
 import cv2
 import torch
@@ -27,7 +28,9 @@ class EOMTSegmentationInference:
         checkpoint_path: str, 
         device: str = "cuda:0",
         save_feature_maps: bool = False,
-        feature_map_dir: Optional[str] = None
+        feature_map_dir: Optional[str] = None,
+        use_windowed: bool = False,
+        window_size: int = 512
     ):
         """
         Initialize EOMT segmentation model for inference
@@ -38,9 +41,13 @@ class EOMTSegmentationInference:
             device: Device to run inference on
             save_feature_maps: Whether to save intermediate feature maps
             feature_map_dir: Directory to save feature maps
+            use_windowed: Whether to use windowed inference for large images
+            window_size: Size of sliding window (default: 512)
         """
         self.device = device
-        self.img_size = (512, 1024)
+        self.img_size = (window_size, window_size) if use_windowed else (512, 1024)
+        self.use_windowed = use_windowed
+        self.window_size = window_size
         self.save_feature_maps = save_feature_maps
         self.feature_map_dir = Path(feature_map_dir) if feature_map_dir else None
         self.feature_maps = {}
@@ -244,12 +251,87 @@ class EOMTSegmentationInference:
         orig_img = np.array(img)
         orig_size = (orig_img.shape[0], orig_img.shape[1])
         
-        img_resized = img.resize((self.img_size[1], self.img_size[0]), Image.BILINEAR)
-        img_tensor = torch.from_numpy(np.array(img_resized)).float()
-        img_tensor = img_tensor.permute(2, 0, 1) / 255.0
-        img_tensor = img_tensor.unsqueeze(0).to(self.device)
+        if self.use_windowed:
+            # For windowed inference, keep original size as tensor
+            img_tensor = torch.from_numpy(orig_img).float()
+            img_tensor = img_tensor.permute(2, 0, 1) / 255.0
+            img_tensor = img_tensor.unsqueeze(0).to(self.device)
+        else:
+            # Direct resize for non-windowed inference
+            img_resized = img.resize((self.img_size[1], self.img_size[0]), Image.BILINEAR)
+            img_tensor = torch.from_numpy(np.array(img_resized)).float()
+            img_tensor = img_tensor.permute(2, 0, 1) / 255.0
+            img_tensor = img_tensor.unsqueeze(0).to(self.device)
         
         return img_tensor, orig_img, orig_size
+
+    def _window_image(self, img_tensor: torch.Tensor) -> Tuple[List[torch.Tensor], List[Tuple[int, int, int]]]:
+        """Split image into overlapping windows for inference"""
+        crops, origins = [], []
+        
+        # img_tensor shape: [1, C, H, W]
+        img = img_tensor[0]  # [C, H, W]
+        _, h, w = img.shape
+        
+        # Calculate number of crops needed
+        num_crops_h = math.ceil(h / self.window_size)
+        num_crops_w = math.ceil(w / self.window_size)
+        
+        # Calculate overlap to cover entire image
+        overlap_h = (num_crops_h * self.window_size - h) / max(num_crops_h - 1, 1) if num_crops_h > 1 else 0
+        overlap_w = (num_crops_w * self.window_size - w) / max(num_crops_w - 1, 1) if num_crops_w > 1 else 0
+        
+        for i in range(num_crops_h):
+            for j in range(num_crops_w):
+                # Calculate crop position with overlap
+                start_h = int(i * (self.window_size - overlap_h))
+                start_w = int(j * (self.window_size - overlap_w))
+                end_h = min(start_h + self.window_size, h)
+                end_w = min(start_w + self.window_size, w)
+                
+                # Adjust start if we're at the edge
+                if end_h == h:
+                    start_h = max(0, h - self.window_size)
+                if end_w == w:
+                    start_w = max(0, w - self.window_size)
+                
+                # Extract crop
+                crop = img[:, start_h:end_h, start_w:end_w]
+                
+                # Pad if necessary (edge cases)
+                if crop.shape[1] < self.window_size or crop.shape[2] < self.window_size:
+                    pad_h = self.window_size - crop.shape[1]
+                    pad_w = self.window_size - crop.shape[2]
+                    crop = F.pad(crop, (0, pad_w, 0, pad_h), mode='reflect')
+                
+                crops.append(crop.unsqueeze(0))  # Add batch dimension
+                origins.append((start_h, end_h, start_w, end_w))
+        
+        return crops, origins
+    
+    def _stitch_windows(self, predictions: List[torch.Tensor], origins: List[Tuple[int, int, int, int]], 
+                       orig_size: Tuple[int, int]) -> torch.Tensor:
+        """Stitch windowed predictions back into full image"""
+        h, w = orig_size
+        num_classes = predictions[0].shape[0]
+        
+        # Create output tensor and count tensor for averaging overlaps
+        output = torch.zeros((num_classes, h, w), device=predictions[0].device)
+        counts = torch.zeros((h, w), device=predictions[0].device)
+        
+        for pred, (start_h, end_h, start_w, end_w) in zip(predictions, origins):
+            # Handle potential padding
+            pred_h = end_h - start_h
+            pred_w = end_w - start_w
+            
+            # Add prediction to output (averaging overlaps)
+            output[:, start_h:end_h, start_w:end_w] += pred[:, :pred_h, :pred_w]
+            counts[start_h:end_h, start_w:end_w] += 1
+        
+        # Average overlapping regions
+        output = output / counts.unsqueeze(0).clamp(min=1)
+        
+        return output
 
     @torch.no_grad()
     def predict(self, image_path: str, save_feature_maps: Optional[bool] = None) -> np.ndarray:
@@ -266,33 +348,63 @@ class EOMTSegmentationInference:
         
         with torch.inference_mode(), torch.amp.autocast(device_type='cuda' if 'cuda' in self.device else 'cpu', 
                                                     enabled=True, dtype=torch.float16):
-            # Forward pass
-            mask_logits_per_layer, class_logits_per_layer = self.model.network(img_tensor)
-            
-            # Save feature maps if enabled
-            if self.save_feature_maps and self.feature_maps:
-                self._save_feature_maps(image_path)
-                logger.info(f"Saved {len(self.feature_maps)} feature maps to {self.feature_map_dir or 'feature_maps'}")
-            
-            # Rest of the prediction logic...
-            mask_logits = F.interpolate(
-                mask_logits_per_layer[-1], self.img_size, mode="bilinear"
-            )
-            
-            B, Q, H, W = mask_logits.shape
-            mask_probs = mask_logits.sigmoid()
-            class_probs = class_logits_per_layer[-1].softmax(dim=-1)[..., :-1]  # Exclude void
-            per_pixel_logits = torch.einsum('bqhw,bqc->bchw', mask_probs, class_probs)
-            
-            preds = per_pixel_logits.argmax(1)[0].cpu().numpy()
-        
-        # Resize to original size
-        if preds.shape != orig_size:
-            preds = cv2.resize(
-                preds.astype(np.uint8),
-                (orig_size[1], orig_size[0]),
-                interpolation=cv2.INTER_NEAREST
-            )
+            if self.use_windowed:
+                # Windowed inference for large images
+                crops, origins = self._window_image(img_tensor)
+                
+                all_predictions = []
+                for crop in crops:
+                    # Forward pass on each crop
+                    mask_logits_per_layer, class_logits_per_layer = self.model.network(crop)
+                    
+                    # Get prediction for this crop
+                    mask_logits = F.interpolate(
+                        mask_logits_per_layer[-1], (self.window_size, self.window_size), mode="bilinear"
+                    )
+                    
+                    B, Q, H, W = mask_logits.shape
+                    mask_probs = mask_logits.sigmoid()
+                    class_probs = class_logits_per_layer[-1].softmax(dim=-1)[..., :-1]  # Exclude void
+                    per_pixel_logits = torch.einsum('bqhw,bqc->bchw', mask_probs, class_probs)
+                    
+                    all_predictions.append(per_pixel_logits[0])  # Remove batch dimension
+                
+                # Stitch predictions together
+                stitched_logits = self._stitch_windows(all_predictions, origins, orig_size)
+                preds = stitched_logits.argmax(0).cpu().numpy()
+                
+                # Save feature maps if enabled (only from last crop)
+                if self.save_feature_maps and self.feature_maps:
+                    self._save_feature_maps(image_path)
+                    logger.info(f"Saved {len(self.feature_maps)} feature maps to {self.feature_map_dir or 'feature_maps'}")
+            else:
+                # Direct inference (original behavior)
+                mask_logits_per_layer, class_logits_per_layer = self.model.network(img_tensor)
+                
+                # Save feature maps if enabled
+                if self.save_feature_maps and self.feature_maps:
+                    self._save_feature_maps(image_path)
+                    logger.info(f"Saved {len(self.feature_maps)} feature maps to {self.feature_map_dir or 'feature_maps'}")
+                
+                # Rest of the prediction logic...
+                mask_logits = F.interpolate(
+                    mask_logits_per_layer[-1], self.img_size, mode="bilinear"
+                )
+                
+                B, Q, H, W = mask_logits.shape
+                mask_probs = mask_logits.sigmoid()
+                class_probs = class_logits_per_layer[-1].softmax(dim=-1)[..., :-1]  # Exclude void
+                per_pixel_logits = torch.einsum('bqhw,bqc->bchw', mask_probs, class_probs)
+                
+                preds = per_pixel_logits.argmax(1)[0].cpu().numpy()
+                
+                # Resize to original size
+                if preds.shape != orig_size:
+                    preds = cv2.resize(
+                        preds.astype(np.uint8),
+                        (orig_size[1], orig_size[0]),
+                        interpolation=cv2.INTER_NEAREST
+                    )
         
         return preds
 
@@ -348,6 +460,10 @@ def main():
                        help="Save intermediate feature maps")
     parser.add_argument("--feature_map_dir", type=str, default=None,
                        help="Directory to save feature maps (default: input_dir/feature_maps)")
+    parser.add_argument("--use_windowed", action="store_true",
+                       help="Use windowed inference for large images (recommended for ERP)")
+    parser.add_argument("--window_size", type=int, default=512,
+                       help="Window size for windowed inference (default: 512)")
     parser.add_argument("--extensions", nargs="+", default=[".jpg", ".jpeg", ".png", ".bmp"],
                        help="Image file extensions to process")
     
@@ -374,8 +490,15 @@ def main():
             checkpoint_path=args.checkpoint,
             device=args.device,
             save_feature_maps=args.save_feature_maps,
-            feature_map_dir=args.feature_map_dir
+            feature_map_dir=args.feature_map_dir,
+            use_windowed=args.use_windowed,
+            window_size=args.window_size
         )
+        
+        if args.use_windowed:
+            logger.info(f"Using windowed inference with window size: {args.window_size}x{args.window_size}")
+        else:
+            logger.info("Using direct inference (resizing to model input size)")
         
         # Find all image files
         image_paths = []
