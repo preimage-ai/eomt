@@ -1,29 +1,33 @@
+# ---------------------------------------------------------------
+# © 2025 Mobile Perception Systems Lab at TU/e. All rights reserved.
+# Licensed under the MIT License.
+# ---------------------------------------------------------------
+
 """
-Full-Resolution Dual-Resolution Dataset
-Perspective: 1024×1024 (padded from 512×512)
-ERP: 1024×2048 (native resolution)
+Full-Resolution Dual-Resolution Dataset: 1024×1024 perspective + 1024×2048 ERP
+Uses custom collate function to handle mixed sizes in same batch
 """
 
-import os
-import random
-import zipfile
 from pathlib import Path
-from typing import Optional, Tuple, List
-import numpy as np
+from typing import Union, Tuple
 import torch
+import random
+import numpy as np
+from torch.utils.data import DataLoader, Dataset as TorchDataset
 from PIL import Image
-from torch.utils.data import Dataset
 import torchvision.transforms.functional as TF
 
-from datasets.transforms import get_transforms
-from datasets.target_parser import TargetParser
+from datasets.lightning_data_module import LightningDataModule
+from datasets.dataset import Dataset
+from datasets.transforms import Transforms
+
+CLASS_MAPPING = {i: i - 1 for i in range(1, 167)}
 
 
-class DualResolutionFull(Dataset):
+class DualResolutionFull(LightningDataModule):
     """
-    Full-resolution dual-resolution dataset.
-    Perspective: Padded to 1024×1024
-    ERP: Native 1024×2048
+    Full-resolution training with 1024×1024 perspective and 1024×2048 ERP.
+    Mixed-size batches handled by custom collate function.
     """
     
     def __init__(
@@ -31,197 +35,201 @@ class DualResolutionFull(Dataset):
         perspective_path: str,
         erp_image_dir: str,
         erp_mask_dir: str,
+        num_workers: int = 4,
+        batch_size: int = 4,
         perspective_img_size: Tuple[int, int] = (1024, 1024),
         erp_img_size: Tuple[int, int] = (1024, 2048),
-        batch_size: int = 4,
-        num_workers: int = 4,
+        num_classes: int = 166,
         color_jitter_enabled: bool = True,
         scale_range: Tuple[float, float] = (0.5, 2.0),
+        check_empty_targets: bool = True,
         perspective_ratio: float = 0.95,
         erp_augmentation_factor: int = 50,
-    ):
-        """
-        Args:
-            perspective_path: Path to ADE20K zip file
-            erp_image_dir: Directory containing ERP images
-            erp_mask_dir: Directory containing ERP masks
-            perspective_img_size: Size for perspective images (H, W)
-            erp_img_size: Size for ERP images (H, W)
-            batch_size: Batch size (smaller due to memory)
-            num_workers: Number of workers
-            color_jitter_enabled: Enable color jitter augmentation
-            scale_range: Range for random scaling
-            perspective_ratio: Ratio of perspective images in batch (0-1)
-            erp_augmentation_factor: Number of augmented versions per ERP image
-        """
-        self.perspective_path = perspective_path
+    ) -> None:
+        super().__init__(
+            path=perspective_path,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            num_classes=num_classes,
+            img_size=perspective_img_size,
+            check_empty_targets=check_empty_targets,
+        )
+        
+        self.perspective_path = Path(perspective_path)
         self.erp_image_dir = Path(erp_image_dir)
         self.erp_mask_dir = Path(erp_mask_dir)
         self.perspective_img_size = perspective_img_size
         self.erp_img_size = erp_img_size
-        self.batch_size = batch_size
-        self.num_workers = num_workers
         self.perspective_ratio = perspective_ratio
         self.erp_augmentation_factor = erp_augmentation_factor
+        self.color_jitter_enabled = color_jitter_enabled
+        self.scale_range = scale_range
         
-        # Create datasets
-        self.perspective_dataset = PerspectiveDatasetFull(
-            perspective_path,
-            img_size=perspective_img_size,
+        print(f"\n{'='*70}")
+        print(f"Full-Resolution Dual-Resolution Training")
+        print(f"{'='*70}")
+        print(f"Perspective: {perspective_img_size} (padded)")
+        print(f"ERP: {erp_img_size} (native)")
+        print(f"Batch size: {batch_size} (optimized for 40GB GPU)")
+        print(f"Perspective ratio: {perspective_ratio:.1%}")
+        print(f"{'='*70}\n")
+        
+        self.save_hyperparameters(ignore=["_class_path"])
+        
+        # Create transforms (apply at 512×512 then pad to 1024×1024)
+        self.perspective_transforms = Transforms(
+            img_size=(512, 512),
             color_jitter_enabled=color_jitter_enabled,
             scale_range=scale_range,
         )
+
+    @staticmethod
+    def target_parser(target, **kwargs):
+        masks, labels = [], []
+        for label_id in target[0].unique():
+            cls_id = label_id.item()
+            if cls_id not in CLASS_MAPPING:
+                continue
+            masks.append(target[0] == label_id)
+            labels.append(CLASS_MAPPING[cls_id])
+        return masks, labels, [False for _ in range(len(masks))]
+
+    def setup(self, stage: Union[str, None] = None) -> LightningDataModule:
+        # Load perspective dataset
+        dataset_kwargs = {
+            "img_suffix": ".jpg",
+            "target_suffix": ".png",
+            "zip_path": Path(self.perspective_path, "ADEChallengeData2016.zip"),
+            "target_zip_path": Path(self.perspective_path, "ADEChallengeData2016.zip"),
+            "target_parser": self.target_parser,
+            "check_empty_targets": self.check_empty_targets,
+        }
         
-        self.erp_dataset = ERPDatasetFull(
-            erp_image_dir,
-            erp_mask_dir,
-            img_size=erp_img_size,
-            augmentation_factor=erp_augmentation_factor,
-            color_jitter_enabled=color_jitter_enabled,
+        perspective_train = Dataset(
+            img_folder_path_in_zip=Path("./ADEChallengeData2016/images/training"),
+            target_folder_path_in_zip=Path("./ADEChallengeData2016/annotations/training"),
+            transforms=self.perspective_transforms,
+            **dataset_kwargs,
         )
         
-        # Mixed dataset
-        self.mixed_dataset = MixedSizeDatasetFull(
-            self.perspective_dataset,
-            self.erp_dataset,
-            perspective_ratio=perspective_ratio,
+        perspective_val = Dataset(
+            img_folder_path_in_zip=Path("./ADEChallengeData2016/images/validation"),
+            target_folder_path_in_zip=Path("./ADEChallengeData2016/annotations/validation"),
+            transforms=None,
+            **dataset_kwargs,
         )
         
-        print(f"Full-Resolution Dual-Resolution Dataset:")
-        print(f"  Perspective: {len(self.perspective_dataset)} images at {perspective_img_size}")
-        print(f"  ERP: {len(self.erp_dataset)} samples at {erp_img_size}")
-        print(f"  Total: {len(self.mixed_dataset)} samples")
-        print(f"  Perspective ratio: {perspective_ratio:.1%}")
-        print(f"  Batch size: {batch_size} (optimized for 40GB GPU)")
-    
-    def __len__(self):
-        return len(self.mixed_dataset)
-    
-    def __getitem__(self, idx):
-        return self.mixed_dataset[idx]
-    
+        # Load ERP images
+        erp_images = sorted(list(self.erp_image_dir.glob("*.jpg")) + list(self.erp_image_dir.glob("*.png")))
+        if len(erp_images) == 0:
+            raise ValueError(f"No ERP images found in {self.erp_image_dir}")
+        
+        erp_masks = [self.erp_mask_dir / f"{img.stem}_mask_ids.png" for img in erp_images]
+        erp_pairs = [(img, mask) for img, mask in zip(erp_images, erp_masks) if mask.exists()]
+        
+        if len(erp_pairs) == 0:
+            raise ValueError(f"No ERP mask pairs found in {self.erp_mask_dir}")
+        
+        print(f"Found {len(perspective_train)} perspective training images")
+        print(f"Found {len(perspective_val)} perspective validation images")
+        print(f"Found {len(erp_pairs)} ERP images")
+        
+        # Split ERP
+        val_split = max(1, len(erp_pairs) // 10)
+        erp_train_pairs = erp_pairs[val_split:]
+        erp_val_pairs = erp_pairs[:val_split]
+        
+        # Wrap perspective datasets to pad to 1024×1024
+        perspective_train_padded = PaddedDataset(perspective_train, self.perspective_img_size)
+        perspective_val_padded = PaddedDataset(perspective_val, self.perspective_img_size)
+        
+        # Create ERP datasets
+        erp_train = ERPDatasetFull(
+            erp_train_pairs,
+            img_size=self.erp_img_size,
+            augmentation_factor=self.erp_augmentation_factor,
+            target_parser=self.target_parser,
+            color_jitter_enabled=self.color_jitter_enabled,
+        )
+        
+        erp_val = ERPDatasetFull(
+            erp_val_pairs,
+            img_size=self.erp_img_size,
+            augmentation_factor=1,
+            target_parser=self.target_parser,
+            color_jitter_enabled=False,
+        )
+        
+        # Create mixed datasets
+        self.train_dataset = MixedSizeDatasetFull(perspective_train_padded, erp_train, self.perspective_ratio)
+        self.val_dataset = MixedSizeDatasetFull(perspective_val_padded, erp_val, self.perspective_ratio)
+        
+        # Store ERP validation dataset separately for validation dataloader
+        self.erp_val_dataset = erp_val
+        
+        return self
+
     def train_dataloader(self):
-        from torch.utils.data import DataLoader
         return DataLoader(
-            self,
-            batch_size=self.batch_size,
+            self.train_dataset,
             shuffle=True,
-            num_workers=self.num_workers,
+            drop_last=True,
             collate_fn=dual_resolution_full_collate_fn,
-            pin_memory=True,
-            persistent_workers=True if self.num_workers > 0 else False,
+            **self.dataloader_kwargs,
         )
-    
+
     def val_dataloader(self):
-        from torch.utils.data import DataLoader
-        # Validation uses ERP dataset only
+        # Validation uses only ERP dataset to avoid mixed-size issues
         return DataLoader(
-            self.erp_dataset,
-            batch_size=1,
+            self.erp_val_dataset,
             shuffle=False,
-            num_workers=self.num_workers,
-            pin_memory=True,
+            collate_fn=self.eval_collate,
+            **self.dataloader_kwargs,
         )
 
 
-class PerspectiveDatasetFull(Dataset):
-    """ADE20K perspective images padded to 1024×1024"""
+class PaddedDataset(TorchDataset):
+    """Wraps a dataset and pads outputs to target size"""
     
-    def __init__(
-        self,
-        zip_path: str,
-        img_size: Tuple[int, int] = (1024, 1024),
-        color_jitter_enabled: bool = True,
-        scale_range: Tuple[float, float] = (0.5, 2.0),
-    ):
-        self.zip_path = zip_path
-        self.img_size = img_size
-        self.transforms = get_transforms(
-            img_size=(512, 512),  # Apply transforms at 512×512 first
-            color_jitter_enabled=color_jitter_enabled,
-            scale_range=scale_range,
-        )
-        self.target_parser = TargetParser()
-        
-        # Load file list from zip
-        self.pairs = []
-        with zipfile.ZipFile(zip_path, 'r') as zf:
-            all_files = zf.namelist()
-            img_files = [f for f in all_files if '/images/training/' in f and f.endswith('.jpg')]
-            
-            for img_file in img_files:
-                mask_file = img_file.replace('/images/training/', '/annotations/training/').replace('.jpg', '.png')
-                if mask_file in all_files:
-                    self.pairs.append((img_file, mask_file))
-        
-        print(f"Found {len(self.pairs)} perspective image pairs")
+    def __init__(self, base_dataset, target_size):
+        self.base_dataset = base_dataset
+        self.target_size = target_size
     
     def __len__(self):
-        return len(self.pairs)
+        return len(self.base_dataset)
     
     def __getitem__(self, idx):
-        img_path, mask_path = self.pairs[idx]
+        img, target = self.base_dataset[idx]
         
-        with zipfile.ZipFile(self.zip_path, 'r') as zf:
-            img = Image.open(zf.open(img_path)).convert('RGB')
-            mask = Image.open(zf.open(mask_path))
-        
-        img = torch.from_numpy(np.array(img)).permute(2, 0, 1).float() / 255.0
-        mask = torch.from_numpy(np.array(mask)).unsqueeze(0).long()
-        
-        # Apply transforms at 512×512
-        if self.transforms:
-            img, mask = self.transforms(img, mask)
-        
-        # Pad to 1024×1024 (center padding)
-        pad_h = self.img_size[0] - img.shape[1]
-        pad_w = self.img_size[1] - img.shape[2]
+        # Pad to target size
+        pad_h = self.target_size[0] - img.shape[1]
+        pad_w = self.target_size[1] - img.shape[2]
         pad_top = pad_h // 2
         pad_bottom = pad_h - pad_top
         pad_left = pad_w // 2
         pad_right = pad_w - pad_left
         
         img = torch.nn.functional.pad(img, (pad_left, pad_right, pad_top, pad_bottom), mode='constant', value=0)
-        mask = torch.nn.functional.pad(mask, (pad_left, pad_right, pad_top, pad_bottom), mode='constant', value=255)
         
-        masks, labels, is_crowd = self.target_parser(mask)
-        
-        target = {
-            "masks": torch.stack(masks) if masks else torch.zeros((0, *mask.shape[-2:])),
-            "labels": torch.tensor(labels, dtype=torch.long),
-            "is_crowd": torch.tensor(is_crowd, dtype=torch.bool),
-            "size": torch.tensor(self.img_size),
-        }
+        # Pad masks
+        if 'masks' in target:
+            masks = target['masks']
+            if masks.numel() > 0:
+                masks = torch.nn.functional.pad(masks, (pad_left, pad_right, pad_top, pad_bottom), mode='constant', value=0)
+                target['masks'] = masks
         
         return img, target
 
 
-class ERPDatasetFull(Dataset):
-    """ERP images at native 1024×2048 with augmentation"""
+class ERPDatasetFull(TorchDataset):
+    """ERP dataset at 1024×2048"""
     
-    def __init__(
-        self,
-        image_dir: str,
-        mask_dir: str,
-        img_size: Tuple[int, int] = (1024, 2048),
-        augmentation_factor: int = 50,
-        color_jitter_enabled: bool = True,
-    ):
-        self.image_dir = Path(image_dir)
-        self.mask_dir = Path(mask_dir)
+    def __init__(self, pairs, img_size, augmentation_factor, target_parser, color_jitter_enabled):
+        self.pairs = pairs
         self.img_size = img_size
         self.augmentation_factor = augmentation_factor
+        self.target_parser = target_parser
         self.color_jitter_enabled = color_jitter_enabled
-        self.target_parser = TargetParser()
-        
-        # Find image-mask pairs
-        self.pairs = []
-        for img_path in sorted(self.image_dir.glob('*.png')):
-            mask_path = self.mask_dir / img_path.name
-            if mask_path.exists():
-                self.pairs.append((img_path, mask_path))
-        
-        print(f"Found {len(self.pairs)} ERP image pairs")
     
     def __len__(self):
         return len(self.pairs) * self.augmentation_factor
@@ -230,20 +238,29 @@ class ERPDatasetFull(Dataset):
         original_idx = idx % len(self.pairs)
         img_path, mask_path = self.pairs[original_idx]
         
-        # Load at native resolution
         img = Image.open(img_path).convert('RGB')
         mask = Image.open(mask_path).convert('L')
         
-        # Resize to target size if needed
-        if img.size != (self.img_size[1], self.img_size[0]):
-            img = img.resize((self.img_size[1], self.img_size[0]), Image.BILINEAR)
-            mask = mask.resize((self.img_size[1], self.img_size[0]), Image.NEAREST)
+        # Resize to target
+        img = img.resize((self.img_size[1], self.img_size[0]), Image.BILINEAR)
+        mask = mask.resize((self.img_size[1], self.img_size[0]), Image.NEAREST)
         
         img = torch.from_numpy(np.array(img)).permute(2, 0, 1).float() / 255.0
         mask = torch.from_numpy(np.array(mask)).unsqueeze(0).long()
         
-        # Apply ERP-specific augmentations
-        img, mask = self._erp_augment(img, mask)
+        # ERP augmentation
+        if random.random() < 0.8:
+            shift = random.randint(0, img.shape[-1] - 1)
+            img = torch.cat([img[:, :, shift:], img[:, :, :shift]], dim=-1)
+            mask = torch.cat([mask[:, :, shift:], mask[:, :, :shift]], dim=-1)
+        
+        if random.random() < 0.5:
+            img = torch.flip(img, [-1])
+            mask = torch.flip(mask, [-1])
+        
+        if self.color_jitter_enabled and random.random() < 0.5:
+            img = TF.adjust_brightness(img, random.uniform(0.8, 1.2))
+            img = TF.adjust_contrast(img, random.uniform(0.8, 1.2))
         
         masks, labels, is_crowd = self.target_parser(mask)
         
@@ -251,52 +268,16 @@ class ERPDatasetFull(Dataset):
             "masks": torch.stack(masks) if masks else torch.zeros((0, *mask.shape[-2:])),
             "labels": torch.tensor(labels, dtype=torch.long),
             "is_crowd": torch.tensor(is_crowd, dtype=torch.bool),
-            "size": torch.tensor(self.img_size),
+            "is_rooftop": True,  # All ERP data is rooftop category
         }
         
         return img, target
-    
-    def _erp_augment(self, img, mask):
-        """ERP-specific augmentations"""
-        # Horizontal wrapping (panorama-specific)
-        if random.random() < 0.8:
-            shift = random.randint(0, img.shape[-1] - 1)
-            img = torch.cat([img[:, :, shift:], img[:, :, :shift]], dim=-1)
-            mask = torch.cat([mask[:, :, shift:], mask[:, :, :shift]], dim=-1)
-        
-        # Vertical shift (camera height variation)
-        if random.random() < 0.5:
-            shift = random.randint(-img.shape[-2] // 4, img.shape[-2] // 4)
-            if shift > 0:
-                img = torch.cat([img[:, shift:, :], img[:, :shift, :]], dim=-2)
-                mask = torch.cat([mask[:, shift:, :], mask[:, :shift, :]], dim=-2)
-            elif shift < 0:
-                img = torch.cat([img[:, shift:, :], img[:, :shift, :]], dim=-2)
-                mask = torch.cat([mask[:, shift:, :], mask[:, :shift, :]], dim=-2)
-        
-        # Horizontal flip
-        if random.random() < 0.5:
-            img = torch.flip(img, [-1])
-            mask = torch.flip(mask, [-1])
-        
-        # Color jitter
-        if self.color_jitter_enabled and random.random() < 0.5:
-            img = TF.adjust_brightness(img, random.uniform(0.8, 1.2))
-            img = TF.adjust_contrast(img, random.uniform(0.8, 1.2))
-            img = TF.adjust_saturation(img, random.uniform(0.8, 1.2))
-        
-        return img, mask
 
 
-class MixedSizeDatasetFull(Dataset):
-    """Mix perspective and ERP datasets with different sizes"""
+class MixedSizeDatasetFull(TorchDataset):
+    """Mix perspective and ERP datasets"""
     
-    def __init__(
-        self,
-        perspective_dataset,
-        erp_dataset,
-        perspective_ratio: float,
-    ):
+    def __init__(self, perspective_dataset, erp_dataset, perspective_ratio):
         self.perspective_dataset = perspective_dataset
         self.erp_dataset = erp_dataset
         self.perspective_ratio = perspective_ratio
@@ -313,23 +294,18 @@ class MixedSizeDatasetFull(Dataset):
 
 
 def dual_resolution_full_collate_fn(batch):
-    """
-    Custom collate function for full-resolution mixed-size batches.
-    Groups 1024×1024 and 1024×2048 images separately.
-    """
-    # Separate by size
+    """Custom collate for mixed-size batches"""
     size_1024 = []
     size_2048 = []
     
     for img, target in batch:
-        if img.shape[-1] == 1024:  # 1024×1024
+        if img.shape[-1] == 1024:
             size_1024.append((img, target))
-        elif img.shape[-1] == 2048:  # 1024×2048
+        elif img.shape[-1] == 2048:
             size_2048.append((img, target))
     
     result = {}
     
-    # Stack 1024×1024 images
     if size_1024:
         result['imgs_1024'] = torch.stack([x[0] for x in size_1024])
         result['targets_1024'] = [x[1] for x in size_1024]
@@ -337,7 +313,6 @@ def dual_resolution_full_collate_fn(batch):
         result['imgs_1024'] = None
         result['targets_1024'] = []
     
-    # Stack 1024×2048 images
     if size_2048:
         result['imgs_2048'] = torch.stack([x[0] for x in size_2048])
         result['targets_2048'] = [x[1] for x in size_2048]

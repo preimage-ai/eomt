@@ -34,37 +34,53 @@ class DualResolutionSemantic(MaskClassificationSemantic):
         
         # Process 512×512 images
         if imgs_512 is not None and len(targets_512) > 0:
-            mask_logits_512, class_logits_512 = self(imgs_512)
-            loss_512 = self.criterion(
-                mask_logits_512,
-                class_logits_512,
-                targets_512,
-            )
-            total_loss += loss_512['loss']
+            mask_logits_per_block, class_logits_per_block = self(imgs_512)
+            
+            # Iterate through each decoder layer's outputs
+            losses_512_all_blocks = {}
+            for i, (mask_logits, class_logits) in enumerate(zip(mask_logits_per_block, class_logits_per_block)):
+                losses = self.criterion(
+                    mask_logits,
+                    targets_512,
+                    class_logits,
+                )
+                block_postfix = self.block_postfix(i)
+                losses = {f"{key}_512{block_postfix}": value for key, value in losses.items()}
+                losses_512_all_blocks |= losses
+            
+            loss_512_total = self.criterion.loss_total(losses_512_all_blocks, self.log)
+            total_loss += loss_512_total
             num_groups += 1
             
             # Log 512×512 metrics
-            self.log('train/loss_512', loss_512['loss'], prog_bar=True, sync_dist=True)
-            self.log('train/mask_loss_512', loss_512['mask_loss'], sync_dist=True)
-            self.log('train/dice_loss_512', loss_512['dice_loss'], sync_dist=True)
-            self.log('train/class_loss_512', loss_512['class_loss'], sync_dist=True)
+            self.log('train/loss_512', loss_512_total, prog_bar=True, sync_dist=True)
+            for key, value in losses_512_all_blocks.items():
+                self.log(f'train/{key}', value, sync_dist=True)
         
         # Process 512×1024 images
         if imgs_1024 is not None and len(targets_1024) > 0:
-            mask_logits_1024, class_logits_1024 = self(imgs_1024)
-            loss_1024 = self.criterion(
-                mask_logits_1024,
-                class_logits_1024,
-                targets_1024,
-            )
-            total_loss += loss_1024['loss']
+            mask_logits_per_block, class_logits_per_block = self(imgs_1024)
+            
+            # Iterate through each decoder layer's outputs
+            losses_1024_all_blocks = {}
+            for i, (mask_logits, class_logits) in enumerate(zip(mask_logits_per_block, class_logits_per_block)):
+                losses = self.criterion(
+                    mask_logits,
+                    targets_1024,
+                    class_logits,
+                )
+                block_postfix = self.block_postfix(i)
+                losses = {f"{key}_1024{block_postfix}": value for key, value in losses.items()}
+                losses_1024_all_blocks |= losses
+            
+            loss_1024_total = self.criterion.loss_total(losses_1024_all_blocks, self.log)
+            total_loss += loss_1024_total
             num_groups += 1
             
             # Log 512×1024 metrics
-            self.log('train/loss_1024', loss_1024['loss'], prog_bar=True, sync_dist=True)
-            self.log('train/mask_loss_1024', loss_1024['mask_loss'], sync_dist=True)
-            self.log('train/dice_loss_1024', loss_1024['dice_loss'], sync_dist=True)
-            self.log('train/class_loss_1024', loss_1024['class_loss'], sync_dist=True)
+            self.log('train/loss_1024', loss_1024_total, prog_bar=True, sync_dist=True)
+            for key, value in losses_1024_all_blocks.items():
+                self.log(f'train/{key}', value, sync_dist=True)
         
         # Average loss across groups
         if num_groups > 0:

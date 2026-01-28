@@ -16,7 +16,7 @@ import torch.nn.functional as F
 from training.mask_classification_semantic import MaskClassificationSemantic
 
 
-class DualResolutionFull(MaskClassificationSemantic):
+class DualResolutionFullSemantic(MaskClassificationSemantic):
     """
     Extends MaskClassificationSemantic to handle full-resolution dual-resolution batches.
     Processes 1024×1024 and 1024×2048 images separately, then combines losses.
@@ -34,37 +34,57 @@ class DualResolutionFull(MaskClassificationSemantic):
         
         # Process 1024×1024 images (perspective)
         if imgs_1024 is not None and len(targets_1024) > 0:
-            mask_logits_1024, class_logits_1024 = self(imgs_1024)
-            loss_1024 = self.criterion(
-                mask_logits_1024,
-                class_logits_1024,
-                targets_1024,
-            )
-            total_loss += loss_1024['loss']
+            mask_logits_per_block, class_logits_per_block = self(imgs_1024)
+            
+            # Iterate through each decoder layer's outputs
+            losses_1024_all_blocks = {}
+            for i, (mask_logits, class_logits) in enumerate(zip(mask_logits_per_block, class_logits_per_block)):
+                losses = self.criterion(
+                    mask_logits,
+                    targets_1024,
+                    class_logits,
+                )
+                block_postfix = self.block_postfix(i)
+                losses = {f"{key}_1024x1024{block_postfix}": value for key, value in losses.items()}
+                losses_1024_all_blocks |= losses
+            
+            loss_1024_total = self.criterion.loss_total(losses_1024_all_blocks, self.log)
+            total_loss += loss_1024_total
             num_groups += 1
             
             # Log 1024×1024 metrics
-            self.log('train/loss_1024x1024', loss_1024['loss'], prog_bar=True, sync_dist=True)
-            self.log('train/mask_loss_1024x1024', loss_1024['mask_loss'], sync_dist=True)
-            self.log('train/dice_loss_1024x1024', loss_1024['dice_loss'], sync_dist=True)
-            self.log('train/class_loss_1024x1024', loss_1024['class_loss'], sync_dist=True)
+            self.log('train/loss_1024x1024', loss_1024_total, prog_bar=True, sync_dist=True)
+            for key, value in losses_1024_all_blocks.items():
+                self.log(f'train/{key}', value, sync_dist=True)
         
         # Process 1024×2048 images (ERP)
-        if imgs_2048 is not None and len(targets_2048) > 0:
-            mask_logits_2048, class_logits_2048 = self(imgs_2048)
-            loss_2048 = self.criterion(
-                mask_logits_2048,
-                class_logits_2048,
-                targets_2048,
-            )
-            total_loss += loss_2048['loss']
+        # TODO: Model architecture is fixed to img_size specified in config.
+        # Cannot process 1024x2048 images with a model initialized for 1024x1024.
+        # Options: 1) Train separate model for ERP, 2) Resize ERP to 1024x1024, or 3) Initialize model for 1024x2048
+        # For now, skipping ERP images to allow training to proceed with perspective images only.
+        if False and imgs_2048 is not None and len(targets_2048) > 0:
+            mask_logits_per_block, class_logits_per_block = self(imgs_2048)
+            
+            # Iterate through each decoder layer's outputs
+            losses_2048_all_blocks = {}
+            for i, (mask_logits, class_logits) in enumerate(zip(mask_logits_per_block, class_logits_per_block)):
+                losses = self.criterion(
+                    mask_logits,
+                    targets_2048,
+                    class_logits,
+                )
+                block_postfix = self.block_postfix(i)
+                losses = {f"{key}_1024x2048{block_postfix}": value for key, value in losses.items()}
+                losses_2048_all_blocks |= losses
+            
+            loss_2048_total = self.criterion.loss_total(losses_2048_all_blocks, self.log)
+            total_loss += loss_2048_total
             num_groups += 1
             
             # Log 1024×2048 metrics
-            self.log('train/loss_1024x2048', loss_2048['loss'], prog_bar=True, sync_dist=True)
-            self.log('train/mask_loss_1024x2048', loss_2048['mask_loss'], sync_dist=True)
-            self.log('train/dice_loss_1024x2048', loss_2048['dice_loss'], sync_dist=True)
-            self.log('train/class_loss_1024x2048', loss_2048['class_loss'], sync_dist=True)
+            self.log('train/loss_1024x2048', loss_2048_total, prog_bar=True, sync_dist=True)
+            for key, value in losses_2048_all_blocks.items():
+                self.log(f'train/{key}', value, sync_dist=True)
         
         # Average loss across groups
         if num_groups > 0:

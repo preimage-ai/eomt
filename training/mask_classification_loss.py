@@ -137,7 +137,7 @@ class MaskClassificationLoss(Mask2FormerLoss):
             print(f"Error loading class weights from {weights_path}: {e}")
             return None, []
 
-    @torch.compiler.disable
+    @torch._dynamo.disable
     def forward(
         self,
         masks_queries_logits: torch.Tensor,
@@ -149,7 +149,6 @@ class MaskClassificationLoss(Mask2FormerLoss):
         ensure dtype/device match with masks_queries_logits, and then call the
         Mask2Former matcher. Add diagnostics on failure.
         """
-
         def _normalize_mask_tensor(mask: torch.Tensor) -> torch.Tensor:
             # Acceptable input shapes (per-target):
             #   [num_instances, 1, H, W]  -> squeeze -> [num_instances, H, W]
@@ -175,8 +174,13 @@ class MaskClassificationLoss(Mask2FormerLoss):
             return mask
 
         # normalize mask tensors and ensure dtype/device compatibility
+        # Explicitly convert to list to prevent any iteration issues
+        targets_list = list(targets) if not isinstance(targets, list) else targets
         mask_labels = []
-        for i, target in enumerate(targets):
+        for i in range(len(targets_list)):
+            target = targets_list[i]
+            if not isinstance(target, dict):
+                raise TypeError(f"target[{i}] is {type(target)}, expected dict. targets type: {type(targets)}")
             if "masks" not in target:
                 raise KeyError(f"target[{i}] is missing 'masks' key")
 
@@ -187,10 +191,10 @@ class MaskClassificationLoss(Mask2FormerLoss):
             mask_labels.append(mask_t)
 
         # class labels (long on correct device)
-        class_labels = [target["labels"].long().to(masks_queries_logits.device) for target in targets]
+        class_labels = [targets_list[i]["labels"].long().to(masks_queries_logits.device) for i in range(len(targets_list))]
         
         # extract is_rooftop flags for sample-aware loss weighting
-        is_rooftop_flags = [target.get("is_rooftop", True) for target in targets]
+        is_rooftop_flags = [targets_list[i].get("is_rooftop", True) for i in range(len(targets_list))]
 
         # call matcher with diagnostics on failure
         try:

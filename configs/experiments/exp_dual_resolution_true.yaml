@@ -1,6 +1,7 @@
 trainer:
   max_epochs: 100
   default_root_dir: checkpoints/dual_resolution_true
+compile_disabled: true  # Disable torch.compile due to dict handling issues
 model:
   class_path: training.dual_resolution_semantic.DualResolutionSemantic
   init_args:
@@ -16,6 +17,9 @@ model:
         num_q: 150
         encoder:
           class_path: models.vit.ViT
+          init_args:
+            img_size: [512, 512]
+            backbone_name: facebook/dinov3-vitl16-pretrain-lvd1689m
 data:
   class_path: datasets.dual_resolution_true.DualResolutionTrue
   init_args:

@@ -2,8 +2,10 @@ trainer:
   max_epochs: 100
   default_root_dir: checkpoints/dual_resolution_full
   gradient_clip_val: 1.0  # Gradient clipping for stability with large images
+  accumulate_grad_batches: 2  # Accumulate gradients to reduce memory usage
+compile_disabled: true  # Disable torch.compile due to dict handling issues
 model:
-  class_path: training.dual_resolution_full.DualResolutionFull
+  class_path: training.dual_resolution_full.DualResolutionFullSemantic
   init_args:
     img_size: [1024, 1024]  # Base size for model initialization
     class_weights_path: rooftop_class_weights.json
@@ -17,12 +19,15 @@ model:
         num_q: 150
         encoder:
           class_path: models.vit.ViT
+          init_args:
+            img_size: [1024, 1024]
+            backbone_name: facebook/dinov3-vitl16-pretrain-lvd1689m
 data:
   class_path: datasets.dual_resolution_full.DualResolutionFull
   init_args:
     perspective_img_size: [1024, 1024]
     erp_img_size: [1024, 2048]
-    batch_size: 4  # Optimized for 40GB GPU
+    batch_size: 2  # Reduced for multi-layer loss computation, effective batch_size=4 with accumulate_grad_batches=2
     num_workers: 4
     color_jitter_enabled: true
     scale_range: [0.5, 2.0]
