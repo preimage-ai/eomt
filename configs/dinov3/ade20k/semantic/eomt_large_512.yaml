@@ -26,7 +26,8 @@ model:
         encoder:
           class_path: models.vit.ViT
           init_args:
-            backbone_name: facebook/dinov3-vitl16-pretrain-lvd1689m
+            img_size: [512, 512]
+            ckpt_path: /home/paladin/Workspace/ADEChallengeData2016/eomt/model06000.ckpt
 data:
   class_path: datasets.ade20k_semantic.ADE20KSemantic
   init_args:
